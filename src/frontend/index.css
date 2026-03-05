@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Romantic pastel palette — OKLCH raw L C H values */
+    --radius: 0.625rem;
+
+    /* Semantic tokens mapped to romantic pastels */
+    --background: 0.98 0.008 70;         /* warm cream #FFF8F0 */
+    --foreground: 0.38 0.04 340;         /* deep rose-gray #5C4A5A */
+    --card: 1 0 0;
+    --card-foreground: 0.38 0.04 340;
+    --popover: 1 0 0;
+    --popover-foreground: 0.38 0.04 340;
+    --primary: 0.75 0.12 355;            /* blush pink */
+    --primary-foreground: 1 0 0;
+    --secondary: 0.95 0.02 70;           /* soft beige */
+    --secondary-foreground: 0.38 0.04 340;
+    --muted: 0.93 0.025 60;
+    --muted-foreground: 0.56 0.04 340;
+    --accent: 0.82 0.06 290;             /* muted lavender */
+    --accent-foreground: 0.38 0.04 340;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.88 0.04 355;             /* soft pink border */
+    --input: 0.93 0.025 60;
+    --ring: 0.75 0.12 355;
+    --chart-1: 0.75 0.12 355;
+    --chart-2: 0.82 0.06 290;
+    --chart-3: 0.93 0.04 80;
+    --chart-4: 0.85 0.08 30;
+    --chart-5: 0.70 0.10 340;
+    --sidebar: 0.96 0.012 70;
+    --sidebar-foreground: 0.38 0.04 340;
+    --sidebar-primary: 0.75 0.12 355;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.92 0.03 290;
+    --sidebar-accent-foreground: 0.38 0.04 340;
+    --sidebar-border: 0.88 0.04 355;
+    --sidebar-ring: 0.75 0.12 355;
+
+    /* Named palette tokens */
+    --color-blush: #F4A7B9;
+    --color-blush-light: #FEE0E8;
+    --color-cream: #FFF8F0;
+    --color-beige: #F5ECD7;
+    --color-lavender: #C9B8D8;
+    --color-lavender-light: #EDE0F0;
+    --color-text: #5C4A5A;
+    --color-text-light: #9B8496;
+  }
+
+  * {
+    box-sizing: border-box;
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /*
+   * SEAMLESS PAGE GRADIENT
+   * One continuous warm-to-lavender wash flows behind all sections.
+   * Individual section backgrounds are transparent so no hard seams appear.
+   */
+  body {
+    background: linear-gradient(
+      180deg,
+      #FFF8F0 0%,
+      #FEF0F4 12%,
+      #FCDCE8 22%,
+      #F9D4E4 32%,
+      #F5E4F0 44%,
+      #EDE0F4 56%,
+      #F0E6F8 66%,
+      #F5ECD7 78%,
+      #F8EDE6 88%,
+      #FFF8F0 100%
+    );
+    background-attachment: fixed;
+    color: var(--color-text);
+    margin: 0;
+    font-family: 'Lora', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================
+   FLOATING HEARTS ANIMATION
+   ============================================ */
+@keyframes floatHeart {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(-50vh) scale(0.95) rotate(5deg);
+    opacity: 0.3;
+  }
+  90% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.8) rotate(-5deg);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   FADE IN ANIMATION
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  opacity: 0;
+}
+
+.fade-in.visible {
+  animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ============================================
+   HEADING GLOW
+   ============================================ */
+.glow-heading {
+  text-shadow:
+    0 0 48px rgba(244, 167, 185, 0.55),
+    0 0 96px rgba(244, 167, 185, 0.22),
+    0 2px 8px rgba(92, 74, 90, 0.12);
+}
+
+/* ============================================
+   LOVE LETTER TYPOGRAPHY
+   ============================================ */
+.letter-paragraph + .letter-paragraph {
+  /* Visual breathing room between stanzas — extra half-line indent */
+  padding-left: 1.2em;
+}
+
+/* ============================================
+   POLAROID STYLES (used in card collages)
+   ============================================ */
+.polaroid {
+  background: #fffdf9;
+  padding: 8px 8px 32px 8px;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.polaroid:hover {
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.polaroid-caption {
+  font-family: 'Dancing Script', cursive;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  text-align: center;
+  margin-top: 8px;
+  line-height: 1.3;
+  display: block;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   SECTION BACKGROUNDS — transparent so the
+   fixed body gradient shows through seamlessly
+   ============================================ */
+.love-letter-bg {
+  background: transparent;
+}
+
+.things-love-bg {
+  background: transparent;
+}
+
+.gallery-bg {
+  background: transparent;
+}
+
+/* ============================================
+   WAVE DIVIDERS between sections
+   ============================================ */
+.wave-divider {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  /* margin slightly into adjacent sections to prevent white-line artifacts */
+  margin-bottom: -1px;
+}
+
+.wave-divider svg {
+  display: block;
+  width: 100%;
+}
+
+/* ============================================
+   LOVE CARD HOVER
+   ============================================ */
+.love-card {
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease;
+  /* Frosted glass-like card surface */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.love-card:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 56px rgba(244, 167, 185, 0.28),
+    0 6px 18px rgba(244, 167, 185, 0.18) !important;
+}
+
+/* ============================================
+   MUSIC PLAYER
+   ============================================ */
+.music-btn {
+  animation: fadeIn 1s ease 2s both;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.love-footer {
+  background: transparent;
+  border-top: 1px solid rgba(244, 167, 185, 0.18);
+}
