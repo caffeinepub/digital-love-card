@@ -1,53 +1,14 @@
 import { useEffect, useRef } from "react";
+import type { LoveCardData } from "../hooks/useEditableContent";
 import PolaroidPhoto from "./PolaroidPhoto";
 
-interface LoveCard {
-  id: number;
-  title: string;
-  description: string;
-  photos: Array<{ src: string; rotation: number }>;
-}
-
-const LOVE_CARDS: LoveCard[] = [
-  {
-    id: 1,
-    title: "The Way You Care",
-    description:
-      "You notice the smallest things — the way I go quiet when something's wrong, the songs I play when I'm tired, the moments I need someone near. You show up, always, without me having to ask.",
-    photos: [
-      { src: "/assets/generated/photo2.dim_600x600.jpg", rotation: -3 },
-      { src: "/assets/generated/photo5.dim_600x600.jpg", rotation: 4 },
-    ],
-  },
-  {
-    id: 2,
-    title: "Your Smile",
-    description:
-      "Your smile is the kind that doesn't just reach your eyes — it reaches mine too. It's disarming and warm and feels like sunlight after a long grey week.",
-    photos: [
-      { src: "/assets/generated/photo4.dim_600x600.jpg", rotation: 3 },
-      { src: "/assets/generated/photo1.dim_600x600.jpg", rotation: -4 },
-    ],
-  },
-  {
-    id: 3,
-    title: "How You Hold Me",
-    description:
-      "There is no safer place in the world than your arms. When you hold me, everything quiets down. The world makes sense again.",
-    photos: [
-      { src: "/assets/generated/photo8.dim_600x600.jpg", rotation: -2 },
-      { src: "/assets/generated/photo3.dim_600x600.jpg", rotation: 3 },
-    ],
-  },
-];
-
 const OCID_MAP: Record<number, string> = {
-  1: "things-love.card.1",
-  2: "things-love.card.2",
-  3: "things-love.card.3",
+  0: "things-love.card.1",
+  1: "things-love.card.2",
+  2: "things-love.card.3",
 };
 
-function LoveCardItem({ card, index }: { card: LoveCard; index: number }) {
+function LoveCardItem({ card, index }: { card: LoveCardData; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,7 +37,7 @@ function LoveCardItem({ card, index }: { card: LoveCard; index: number }) {
     <div
       ref={ref}
       className="fade-in love-card"
-      data-ocid={OCID_MAP[card.id]}
+      data-ocid={OCID_MAP[index]}
       style={{
         background: "rgba(255, 252, 250, 0.72)",
         border: "1px solid rgba(255, 255, 255, 0.7)",
@@ -131,7 +92,7 @@ function LoveCardItem({ card, index }: { card: LoveCard; index: number }) {
       >
         {card.photos.map((photo, pi) => (
           <PolaroidPhoto
-            key={`card-${card.id}-photo-${pi}`}
+            key={photo.src}
             src={photo.src}
             rotation={photo.rotation}
             size={118}
@@ -147,7 +108,13 @@ function LoveCardItem({ card, index }: { card: LoveCard; index: number }) {
   );
 }
 
-export default function ThingsILoveSection() {
+interface ThingsILoveSectionProps {
+  loveCards: LoveCardData[];
+}
+
+export default function ThingsILoveSection({
+  loveCards,
+}: ThingsILoveSectionProps) {
   const headingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -277,8 +244,8 @@ export default function ThingsILoveSection() {
             gap: "clamp(20px, 4vw, 32px)",
           }}
         >
-          {LOVE_CARDS.map((card, i) => (
-            <LoveCardItem key={card.id} card={card} index={i} />
+          {loveCards.map((card, i) => (
+            <LoveCardItem key={card.title} card={card} index={i} />
           ))}
         </div>
       </div>

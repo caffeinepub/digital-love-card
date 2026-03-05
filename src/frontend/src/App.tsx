@@ -1,7 +1,9 @@
+import EditPanel from "./components/EditPanel";
 import LoveLetterSection from "./components/LoveLetterSection";
-import MusicPlayer from "./components/MusicPlayer";
 import PolaroidGallery from "./components/PolaroidGallery";
+import SpotifyPlayer from "./components/SpotifyPlayer";
 import ThingsILoveSection from "./components/ThingsILoveSection";
+import { useEditableContent } from "./hooks/useEditableContent";
 
 /**
  * Soft SVG wave divider — creates a seamless organic boundary between sections.
@@ -44,6 +46,13 @@ function WaveDivider({ flip = false }: { flip?: boolean }) {
 
 export default function App() {
   const currentYear = new Date().getFullYear();
+  const {
+    content,
+    setLetterText,
+    setLoveCards,
+    setGalleryPhotos,
+    setSpotifyUrl,
+  } = useEditableContent();
 
   return (
     <>
@@ -53,11 +62,11 @@ export default function App() {
           minHeight: "100vh",
         }}
       >
-        <LoveLetterSection />
+        <LoveLetterSection letterText={content.letterText} />
         <WaveDivider />
-        <ThingsILoveSection />
+        <ThingsILoveSection loveCards={content.loveCards} />
         <WaveDivider flip />
-        <PolaroidGallery />
+        <PolaroidGallery galleryPhotos={content.galleryPhotos} />
       </main>
 
       {/* Footer */}
@@ -103,8 +112,20 @@ export default function App() {
         </p>
       </footer>
 
-      {/* Persistent music player */}
-      <MusicPlayer />
+      {/* Spotify music player */}
+      <SpotifyPlayer spotifyUrl={content.spotifyUrl} />
+
+      {/* Edit panel */}
+      <EditPanel
+        letterText={content.letterText}
+        loveCards={content.loveCards}
+        galleryPhotos={content.galleryPhotos}
+        spotifyUrl={content.spotifyUrl}
+        setLetterText={setLetterText}
+        setLoveCards={setLoveCards}
+        setGalleryPhotos={setGalleryPhotos}
+        setSpotifyUrl={setSpotifyUrl}
+      />
     </>
   );
 }

@@ -1,29 +1,6 @@
 import { useEffect, useRef } from "react";
 import FloatingHearts from "./FloatingHearts";
 
-const LETTER_PARAGRAPHS: Array<{ id: string; text: string }> = [
-  {
-    id: "para-shift",
-    text: "From the very first moment I saw you, I knew something in my world had shifted. There was nothing dramatic about it — no thunderclap, no fireworks — just the quiet, unmistakable feeling that I was exactly where I was supposed to be. Like a compass needle finding north after years of drifting. You walked into my life and everything rearranged itself, gently, irreversibly.",
-  },
-  {
-    id: "para-ordinary",
-    text: "You have this incredible way of making ordinary moments feel extraordinary. A Tuesday evening suddenly becomes something I'll remember forever. A walk to nowhere in particular becomes an adventure. Watching you do the simplest things — sipping coffee, laughing at something ridiculous, getting lost in thought — I find myself thinking: this is it. This is what people write songs about.",
-  },
-  {
-    id: "para-laugh",
-    text: "I love how you laugh at your own jokes even before you finish telling them, how you get completely absorbed in the things you love, how your eyes light up when you're excited about something. I love the way you notice the world — the way you point out things I would have walked right past. You've made me see everything more clearly, more tenderly.",
-  },
-  {
-    id: "para-stillness",
-    text: "In a world that moves so fast, you are my stillness. You are the place I come back to. When everything feels uncertain and loud, there is something in your presence that settles me — like the first breath after a long run, like sunlight after a grey, grey week. You don't fix things, but somehow, being near you makes everything feel more manageable, more okay.",
-  },
-  {
-    id: "para-choose",
-    text: "I want you to know that every single day, I choose you. Not out of habit, not out of convenience — but because loving you is the best and most deliberate thing I have ever done. You are my favourite story, my most treasured chapter. And I hope that in some small way, you feel that every time I look at you.",
-  },
-];
-
 interface ParagraphProps {
   text: string;
   index: number;
@@ -76,8 +53,17 @@ function AnimatedParagraph({ text, index, id }: ParagraphProps) {
   );
 }
 
-export default function LoveLetterSection() {
+interface LoveLetterSectionProps {
+  letterText: string;
+}
+
+export default function LoveLetterSection({
+  letterText,
+}: LoveLetterSectionProps) {
   const headingRef = useRef<HTMLDivElement>(null);
+  const paragraphs = letterText
+    .split("\n\n")
+    .filter((p) => p.trim().length > 0);
 
   useEffect(() => {
     const el = headingRef.current;
@@ -201,11 +187,11 @@ export default function LoveLetterSection() {
           >
             "
           </div>
-          {LETTER_PARAGRAPHS.map((para, i) => (
+          {paragraphs.map((text, i) => (
             <AnimatedParagraph
-              key={para.id}
-              id={para.id}
-              text={para.text}
+              key={text.slice(0, 24)}
+              id={`para-${i}`}
+              text={text}
               index={i}
             />
           ))}

@@ -1,102 +1,5 @@
 import { useEffect, useRef } from "react";
-
-interface GalleryPhoto {
-  src: string;
-  caption: string;
-  rotation: number;
-  size: number;
-  // Pixel-based desktop placement within a 960 × 940 canvas
-  top: number;
-  left: number;
-  zIndex: number;
-}
-
-// Carefully crafted pixel positions for a genuine "scattered on a table" look.
-// Container is 960px wide × 940px tall. Photos range 155–200px wide.
-// Adjacent photos intentionally overlap 15–50px.
-const GALLERY_PHOTOS: GalleryPhoto[] = [
-  {
-    src: "/assets/generated/photo1.dim_600x600.jpg",
-    caption: "golden hour",
-    rotation: -8,
-    size: 190,
-    top: 28,
-    left: 22,
-    zIndex: 4,
-  },
-  {
-    src: "/assets/generated/photo2.dim_600x600.jpg",
-    caption: "hand in hand",
-    rotation: 5,
-    size: 172,
-    top: 14,
-    left: 178, // overlaps photo1 by ~34px
-    zIndex: 6,
-  },
-  {
-    src: "/assets/generated/photo3.dim_600x600.jpg",
-    caption: "autumn walks",
-    rotation: -4,
-    size: 200,
-    top: 8,
-    left: 360, // slight gap — this one is a tall anchor
-    zIndex: 2,
-  },
-  {
-    src: "/assets/generated/photo4.dim_600x600.jpg",
-    caption: "that smile",
-    rotation: 9,
-    size: 165,
-    top: 22,
-    left: 576, // overlaps photo3 by ~16px
-    zIndex: 5,
-  },
-  {
-    src: "/assets/generated/photo5.dim_600x600.jpg",
-    caption: "morning coffee",
-    rotation: -6,
-    size: 178,
-    top: 18,
-    left: 760, // right cluster
-    zIndex: 3,
-  },
-  {
-    src: "/assets/generated/photo6.dim_600x600.jpg",
-    caption: "counting stars",
-    rotation: 4,
-    size: 185,
-    top: 330, // middle row — slightly higher
-    left: 60,
-    zIndex: 5,
-  },
-  {
-    src: "/assets/generated/photo7.dim_600x600.jpg",
-    caption: "dinner for two",
-    rotation: -10,
-    size: 170,
-    top: 310,
-    left: 255, // overlaps photo6 by ~40px
-    zIndex: 3,
-  },
-  {
-    src: "/assets/generated/photo8.dim_600x600.jpg",
-    caption: "wildflower field",
-    rotation: 7,
-    size: 193,
-    top: 320,
-    left: 490,
-    zIndex: 6,
-  },
-  {
-    src: "/assets/generated/photo9.dim_600x600.jpg",
-    caption: "quiet afternoons",
-    rotation: -3,
-    size: 182,
-    top: 640, // bottom solo
-    left: 350,
-    zIndex: 4,
-  },
-];
+import type { GalleryPhotoData } from "../hooks/useEditableContent";
 
 const OCID_MAP: Record<number, string> = {
   0: "gallery.item.1",
@@ -111,7 +14,7 @@ const OCID_MAP: Record<number, string> = {
 };
 
 interface GalleryItemProps {
-  photo: GalleryPhoto;
+  photo: GalleryPhotoData;
   index: number;
   isMobile?: boolean;
 }
@@ -214,7 +117,13 @@ function GalleryItem({ photo, index, isMobile = false }: GalleryItemProps) {
   );
 }
 
-export default function PolaroidGallery() {
+interface PolaroidGalleryProps {
+  galleryPhotos: GalleryPhotoData[];
+}
+
+export default function PolaroidGallery({
+  galleryPhotos,
+}: PolaroidGalleryProps) {
   const headingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -329,14 +238,14 @@ export default function PolaroidGallery() {
           className="hidden md:block"
           style={{
             position: "relative",
-            // Height enough to fit bottom-most photo (top:640 + size:182 + caption) + padding
-            height: "900px",
+            // Height: bottom solo photo top:460 + size:182 + caption ~= 680px
+            height: "680px",
             width: "100%",
           }}
         >
-          {GALLERY_PHOTOS.map((photo, i) => (
+          {galleryPhotos.map((photo, i) => (
             <GalleryItem
-              key={`desktop-${photo.caption}`}
+              key={`desktop-${photo.src}`}
               photo={photo}
               index={i}
               isMobile={false}
@@ -355,9 +264,9 @@ export default function PolaroidGallery() {
             paddingBottom: "12px",
           }}
         >
-          {GALLERY_PHOTOS.map((photo, i) => (
+          {galleryPhotos.map((photo, i) => (
             <GalleryItem
-              key={`mobile-${photo.caption}`}
+              key={`mobile-${photo.src}`}
               photo={photo}
               index={i}
               isMobile={true}
