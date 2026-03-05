@@ -1,19 +1,23 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type {
   GalleryPhotoData,
   LoveCardData,
 } from "../hooks/useEditableContent";
 
 interface EditPanelProps {
+  isUnlocked: boolean;
   letterText: string;
   loveCards: LoveCardData[];
   galleryPhotos: GalleryPhotoData[];
   spotifyUrl: string;
+  audioFileName: string;
   setLetterText: (text: string) => void;
   setLoveCards: (cards: LoveCardData[]) => void;
   setGalleryPhotos: (photos: GalleryPhotoData[]) => void;
   setSpotifyUrl: (url: string) => void;
+  setAudio: (dataUrl: string, fileName: string) => void;
+  clearAudio: () => void;
 }
 
 type TabId = "letter" | "cards" | "music" | "gallery";
@@ -59,17 +63,38 @@ const sectionHeadingStyle: React.CSSProperties = {
 };
 
 export default function EditPanel({
+  isUnlocked,
   letterText,
   loveCards,
   galleryPhotos,
-  spotifyUrl,
+  audioFileName,
   setLetterText,
   setLoveCards,
   setGalleryPhotos,
-  setSpotifyUrl,
+  setAudio,
+  clearAudio,
 }: EditPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("letter");
+  const [audioUploading, setAudioUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  function handleAudioFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAudioUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAudio(reader.result as string, file.name);
+      setAudioUploading(false);
+    };
+    reader.onerror = () => setAudioUploading(false);
+    reader.readAsDataURL(file);
+    // Reset so the same file can be re-selected
+    e.target.value = "";
+  }
+
+  if (!isUnlocked) return null;
 
   const updateCard = (
     cardIndex: number,
@@ -369,50 +394,124 @@ export default function EditPanel({
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "12px",
+                    gap: "16px",
                   }}
                 >
-                  <p style={sectionHeadingStyle}>Spotify Music</p>
-                  <div>
-                    <label style={labelStyle} htmlFor="spotify-input">
-                      Spotify Link
-                    </label>
-                    <input
-                      id="spotify-input"
-                      data-ocid="edit.music.input"
-                      type="text"
-                      value={spotifyUrl}
-                      onChange={(e) => setSpotifyUrl(e.target.value)}
-                      placeholder="https://open.spotify.com/track/..."
-                      style={inputStyle}
-                    />
-                  </div>
+                  <p style={sectionHeadingStyle}>Background Music</p>
                   <p
                     style={{
                       fontFamily: "'Lora', Georgia, serif",
                       fontSize: "0.78rem",
                       color: "var(--color-text-light)",
                       margin: 0,
-                      lineHeight: 1.55,
+                      lineHeight: 1.6,
                       fontStyle: "italic",
                     }}
                   >
-                    Paste any Spotify track or playlist URL. The music player
-                    will appear in the bottom-right corner ♪
+                    Upload an MP3 or audio file — it will play automatically
+                    when your love card opens ♪
                   </p>
-                  {spotifyUrl && (
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioFile}
+                    style={{ display: "none" }}
+                    aria-label="Upload audio file"
+                  />
+
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    data-ocid="edit.music.upload_button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={audioUploading}
+                    style={{
+                      padding: "12px 20px",
+                      borderRadius: "10px",
+                      border: "1.5px dashed rgba(244,167,185,0.6)",
+                      background: "rgba(244,167,185,0.06)",
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.85rem",
+                      color: "#D47A91",
+                      cursor: audioUploading ? "wait" : "pointer",
+                      transition:
+                        "background 0.2s ease, border-color 0.2s ease",
+                      textAlign: "center",
+                      lineHeight: 1.5,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!audioUploading)
+                        e.currentTarget.style.background =
+                          "rgba(244,167,185,0.12)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background =
+                        "rgba(244,167,185,0.06)";
+                    }}
+                  >
+                    {audioUploading
+                      ? "Loading…"
+                      : audioFileName
+                        ? "Replace song"
+                        : "♫  Choose audio file"}
+                  </button>
+
+                  {/* Current file status */}
+                  {audioFileName && (
                     <div
                       style={{
-                        padding: "10px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "10px 14px",
                         background: "rgba(244,167,185,0.08)",
-                        borderRadius: "8px",
-                        fontFamily: "'Lora', Georgia, serif",
-                        fontSize: "0.76rem",
-                        color: "#D47A91",
-                        wordBreak: "break-all",
+                        borderRadius: "10px",
+                        border: "1px solid rgba(244,167,185,0.22)",
                       }}
                     >
-                      ♫ {spotifyUrl}
+                      <span style={{ fontSize: "1.1rem" }}>🎵</span>
+                      <span
+                        style={{
+                          fontFamily: "'Lora', Georgia, serif",
+                          fontSize: "0.8rem",
+                          color: "var(--color-text)",
+                          flex: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {audioFileName}
+                      </span>
+                      <button
+                        type="button"
+                        data-ocid="edit.music.delete_button"
+                        onClick={clearAudio}
+                        aria-label="Remove audio"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--color-text-light)",
+                          fontSize: "1rem",
+                          lineHeight: 1,
+                          padding: "2px 4px",
+                          borderRadius: "4px",
+                          transition: "color 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#D47A91";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color =
+                            "var(--color-text-light)";
+                        }}
+                      >
+                        ×
+                      </button>
                     </div>
                   )}
                 </div>

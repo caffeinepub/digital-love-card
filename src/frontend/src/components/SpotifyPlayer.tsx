@@ -15,15 +15,20 @@ function toEmbedUrl(url: string): string | null {
     if (parts.length < 2) return null;
     const [type, id] = parts;
     if (!["track", "playlist", "album", "episode"].includes(type)) return null;
-    return `https://open.spotify.com/embed/${type}/${id}`;
+    // autoplay=1 requests Spotify to start playing; user may need to click play once due to browser policy
+    // start=0&end=60 limits playback to the first 60 seconds (1 minute)
+    return `https://open.spotify.com/embed/${type}/${id}?autoplay=1&theme=0&start=0&end=60`;
   } catch {
     return null;
   }
 }
 
 export default function SpotifyPlayer({ spotifyUrl }: SpotifyPlayerProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const embedUrl = toEmbedUrl(spotifyUrl);
+  // Always start open so the player is immediately visible when a URL is set
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (!embedUrl) return null;
 
   return (
     <>
@@ -51,31 +56,15 @@ export default function SpotifyPlayer({ spotifyUrl }: SpotifyPlayerProps) {
               backdropFilter: "blur(12px)",
             }}
           >
-            {embedUrl ? (
-              <iframe
-                src={embedUrl}
-                width="300"
-                height="80"
-                frameBorder="0"
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
-                style={{ display: "block", borderRadius: "16px" }}
-                title="Spotify Player"
-              />
-            ) : (
-              <div
-                style={{
-                  padding: "16px 20px",
-                  fontFamily: "'Lora', Georgia, serif",
-                  fontSize: "0.82rem",
-                  color: "var(--color-text-light)",
-                  textAlign: "center",
-                  lineHeight: 1.5,
-                }}
-              >
-                Add a Spotify link in the Edit panel ✏️
-              </div>
-            )}
+            <iframe
+              src={embedUrl}
+              width="300"
+              height="80"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              style={{ display: "block", borderRadius: "16px" }}
+              title="Spotify Player"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -85,8 +74,8 @@ export default function SpotifyPlayer({ spotifyUrl }: SpotifyPlayerProps) {
         type="button"
         data-ocid="spotify.toggle"
         onClick={() => setIsOpen((v) => !v)}
-        title={isOpen ? "Close music player" : "Open music player"}
-        aria-label={isOpen ? "Close music player" : "Open music player"}
+        title={isOpen ? "Hide music player" : "Show music player"}
+        aria-label={isOpen ? "Hide music player" : "Show music player"}
         className="music-btn"
         style={{
           position: "fixed",

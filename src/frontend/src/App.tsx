@@ -1,7 +1,8 @@
+import { useRef, useState } from "react";
+import AudioPlayer from "./components/AudioPlayer";
 import EditPanel from "./components/EditPanel";
 import LoveLetterSection from "./components/LoveLetterSection";
 import PolaroidGallery from "./components/PolaroidGallery";
-import SpotifyPlayer from "./components/SpotifyPlayer";
 import ThingsILoveSection from "./components/ThingsILoveSection";
 import { useEditableContent } from "./hooks/useEditableContent";
 
@@ -44,6 +45,10 @@ function WaveDivider({ flip = false }: { flip?: boolean }) {
   );
 }
 
+// How many times the footer heart must be tapped to unlock edit mode
+const UNLOCK_TAPS = 5;
+const TAP_WINDOW_MS = 3000;
+
 export default function App() {
   const currentYear = new Date().getFullYear();
   const {
@@ -52,7 +57,27 @@ export default function App() {
     setLoveCards,
     setGalleryPhotos,
     setSpotifyUrl,
+    setAudio,
+    clearAudio,
   } = useEditableContent();
+
+  // Secret tap unlock: tap the heart in the footer UNLOCK_TAPS times within TAP_WINDOW_MS
+  const [editUnlocked, setEditUnlocked] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleHeartTap() {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= UNLOCK_TAPS) {
+      tapCountRef.current = 0;
+      setEditUnlocked((prev) => !prev);
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, TAP_WINDOW_MS);
+  }
 
   return (
     <>
@@ -86,8 +111,27 @@ export default function App() {
             lineHeight: 1.6,
           }}
         >
-          © {currentYear}. Built with{" "}
-          <span style={{ color: "#E8849A" }}>♥</span> using{" "}
+          {/* Tap 5× quickly to unlock edit mode */}© {currentYear}. Built with{" "}
+          <button
+            type="button"
+            aria-label="secret edit unlock"
+            onClick={handleHeartTap}
+            style={{
+              color: "#E8849A",
+              cursor: "default",
+              userSelect: "none",
+              background: "none",
+              border: "none",
+              padding: 0,
+              font: "inherit",
+              fontSize: "inherit",
+              lineHeight: "inherit",
+              display: "inline",
+            }}
+          >
+            ♥
+          </button>{" "}
+          using{" "}
           <a
             href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
               typeof window !== "undefined" ? window.location.hostname : "",
@@ -112,19 +156,23 @@ export default function App() {
         </p>
       </footer>
 
-      {/* Spotify music player */}
-      <SpotifyPlayer spotifyUrl={content.spotifyUrl} />
+      {/* Background audio player — autoplays uploaded file */}
+      <AudioPlayer audioDataUrl={content.audioDataUrl} />
 
-      {/* Edit panel */}
+      {/* Edit panel — only shown when unlocked via secret tap */}
       <EditPanel
+        isUnlocked={editUnlocked}
         letterText={content.letterText}
         loveCards={content.loveCards}
         galleryPhotos={content.galleryPhotos}
         spotifyUrl={content.spotifyUrl}
+        audioFileName={content.audioFileName}
         setLetterText={setLetterText}
         setLoveCards={setLoveCards}
         setGalleryPhotos={setGalleryPhotos}
         setSpotifyUrl={setSpotifyUrl}
+        setAudio={setAudio}
+        clearAudio={clearAudio}
       />
     </>
   );

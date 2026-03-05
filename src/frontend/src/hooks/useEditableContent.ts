@@ -21,6 +21,8 @@ export interface LoveCardContent {
   loveCards: LoveCardData[];
   galleryPhotos: GalleryPhotoData[];
   spotifyUrl: string;
+  audioDataUrl: string;
+  audioFileName: string;
 }
 
 const DEFAULT_CONTENT: LoveCardContent = {
@@ -147,6 +149,8 @@ const DEFAULT_CONTENT: LoveCardContent = {
   ],
 
   spotifyUrl: "",
+  audioDataUrl: "",
+  audioFileName: "",
 };
 
 const STORAGE_KEY = "love-card-content";
@@ -161,6 +165,8 @@ function loadFromStorage(): LoveCardContent {
       loveCards: parsed.loveCards ?? DEFAULT_CONTENT.loveCards,
       galleryPhotos: parsed.galleryPhotos ?? DEFAULT_CONTENT.galleryPhotos,
       spotifyUrl: parsed.spotifyUrl ?? DEFAULT_CONTENT.spotifyUrl,
+      audioDataUrl: parsed.audioDataUrl ?? DEFAULT_CONTENT.audioDataUrl,
+      audioFileName: parsed.audioFileName ?? DEFAULT_CONTENT.audioFileName,
     };
   } catch {
     return DEFAULT_CONTENT;
@@ -190,11 +196,23 @@ export function useEditableContent() {
   const setSpotifyUrl = (url: string) =>
     setContent((prev) => ({ ...prev, spotifyUrl: url }));
 
+  const setAudio = (dataUrl: string, fileName: string) =>
+    setContent((prev) => ({
+      ...prev,
+      audioDataUrl: dataUrl,
+      audioFileName: fileName,
+    }));
+
+  const clearAudio = () =>
+    setContent((prev) => ({ ...prev, audioDataUrl: "", audioFileName: "" }));
+
   return {
     content,
     setLetterText,
     setLoveCards,
     setGalleryPhotos,
     setSpotifyUrl,
+    setAudio,
+    clearAudio,
   };
 }
