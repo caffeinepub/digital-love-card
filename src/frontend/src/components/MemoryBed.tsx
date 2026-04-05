@@ -54,6 +54,7 @@ export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
             display: "inline-block",
             width: "100%",
             maxWidth: "860px",
+            aspectRatio: "1 / 1",
             borderRadius: "24px",
             overflow: "hidden",
             boxShadow:
@@ -65,7 +66,7 @@ export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
             alt="Flatlay of keepsake items including bracelets, plushies, candle, heart with sathu, cactus jack plate, and crocheted sunflower"
             style={{
               width: "100%",
-              height: "auto",
+              height: "100%",
               display: "block",
               objectFit: "cover",
             }}
