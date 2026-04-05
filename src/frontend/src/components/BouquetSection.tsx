@@ -52,8 +52,8 @@ const FLOWER_MEANINGS = [
   },
 ];
 
-const BOUQUET_IMG =
-  "/assets/generated/bouquet-watercolor-v2-transparent.dim_500x650.png";
+// Your uploaded bouquet is now the default
+const BOUQUET_IMG = "/assets/bouquet-user.png";
 
 interface BouquetSectionProps {
   bouquetImageUrl?: string;
@@ -108,13 +108,16 @@ export default function BouquetSection({
             fontSize: "0.82rem",
             color: "#7a9e7e",
             fontStyle: "italic",
-            margin: "0 0 24px 0",
+            margin: "0 0 8px 0",
           }}
         >
           tap to discover what each flower means
         </p>
 
-        {/* Bouquet image — padding gives the drop-shadow room to breathe */}
+        {/*
+          Large generous padding so the drop-shadow is never clipped.
+          overflow: visible on all wrappers ensures nothing cuts the image.
+        */}
         <motion.div
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.98 }}
@@ -122,18 +125,19 @@ export default function BouquetSection({
           style={{
             cursor: "pointer",
             display: "block",
-            width: "min(380px, 90vw)",
+            width: "min(420px, 92vw)",
             margin: "0 auto",
-            padding: "20px 0",
+            paddingTop: "32px",
+            paddingBottom: "32px",
             overflow: "visible",
+            boxSizing: "content-box",
           }}
         >
           <img
             src={imageSrc}
-            alt="Watercolour bouquet of sunflowers, lavender, baby's breath, tulips, chrysanthemums, carnations, peonies and daisies wrapped in sheer white cloth with a green ribbon for sathwik"
+            alt="Bouquet for sathwik"
             style={{
               width: "100%",
-              maxWidth: "100%",
               height: "auto",
               display: "block",
               filter: "drop-shadow(0 12px 32px rgba(58,90,64,0.22))",
