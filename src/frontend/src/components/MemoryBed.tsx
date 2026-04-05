@@ -7,7 +7,7 @@ interface MemoryBedProps {
 export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
   const imageSrc =
     treasuresImageUrl ||
-    "/assets/generated/memory-bed-realistic.dim_900x700.png";
+    "/assets/generated/little-treasures-flatlay.dim_900x700.jpg";
 
   return (
     <section

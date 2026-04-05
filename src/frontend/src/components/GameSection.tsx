@@ -100,7 +100,7 @@ export default function GameSection({
           alignItems: "center",
         }}
       >
-        {/* Left: Board game image upload */}
+        {/* Board game image upload */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -162,7 +162,7 @@ export default function GameSection({
               />
             ) : (
               <>
-                <span style={{ fontSize: "2.5rem" }}>🎲</span>
+                <span style={{ fontSize: "2.5rem" }}>&#127922;</span>
                 <span
                   style={{
                     fontFamily: "'Lora', Georgia, serif",
@@ -183,7 +183,7 @@ export default function GameSection({
           </button>
         </motion.div>
 
-        {/* Right: Dice — large SVG, always visible, click to roll */}
+        {/* Dice */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -222,7 +222,7 @@ export default function GameSection({
               e.currentTarget.style.transform = "scale(1)";
             }}
           >
-            <DiceSVG rolling={rolling} />
+            <DiceSVG rolling={rolling} result={diceResult} />
           </button>
           <p
             style={{
@@ -234,7 +234,7 @@ export default function GameSection({
               margin: 0,
             }}
           >
-            {rolling ? "rolling..." : "click the dice for a poem 🌿"}
+            {rolling ? "rolling..." : "click the dice for a poem"}
           </p>
         </motion.div>
       </div>
@@ -283,7 +283,7 @@ export default function GameSection({
                   lineHeight: 1,
                 }}
               >
-                ×
+                &#215;
               </button>
 
               <div
@@ -341,7 +341,7 @@ export default function GameSection({
 
               <button
                 type="button"
-                data-ocid="game.dice.button"
+                data-ocid="game.roll_again.button"
                 onClick={() => {
                   setPoemOpen(false);
                   setTimeout(handleDiceClick, 200);
@@ -366,7 +366,7 @@ export default function GameSection({
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
-                roll again 🎲
+                roll again
               </button>
             </motion.div>
           </motion.div>
@@ -376,8 +376,175 @@ export default function GameSection({
   );
 }
 
-// Inline SVG dice — always visible, never dependent on image loading
-function DiceSVG({ rolling }: { rolling: boolean }) {
+// ---------------------------------------------------------------------------
+// Standard die: opposite pairs are 1+6=7, 2+5=7, 3+4=7
+// Adjacency: for a given top face, which numbers appear on right and left
+const FACE_ADJACENCY: Record<number, [number, number]> = {
+  1: [2, 3],
+  2: [1, 4],
+  3: [1, 5],
+  4: [2, 6],
+  5: [3, 6],
+  6: [4, 5],
+};
+
+// ---------------------------------------------------------------------------
+// TOP FACE dot positions (isometric rhombus)
+// Face vertices: top=(100,20), right=(170,58), bottom=(100,96), left=(30,58)
+// Center: (100,58), half-width=70, half-height=38
+// Isometric grid axes: right=(+35,+19), left=(-35,+19)
+// We use a 3-col x 2-row grid with:
+//   col step along right-diagonal: col * (23, 12)
+//   row step (up/down in face):    row * (-4, 14)
+function getTopDots(count: number): Array<[number, number]> {
+  const cx = 100;
+  const cy = 58;
+
+  function gp(col: number, row: number): [number, number] {
+    return [cx + col * 22 + row * -4, cy + col * 11 + row * 14];
+  }
+
+  const TL = gp(-1, -1);
+  const TC = gp(0, -1);
+  const TR = gp(1, -1);
+  const ML = gp(-1, 0);
+  const CC = gp(0, 0);
+  const MR = gp(1, 0);
+  const BL = gp(-1, 1);
+  const BC = gp(0, 1);
+  const BR = gp(1, 1);
+
+  // Keep TS/BS unused warning suppressed
+  void ML;
+  void MR;
+  void BC;
+
+  switch (count) {
+    case 1:
+      return [CC];
+    case 2:
+      return [TL, BR];
+    case 3:
+      return [TL, CC, BR];
+    case 4:
+      return [TL, TR, BL, BR];
+    case 5:
+      return [TL, TR, CC, BL, BR];
+    case 6:
+      return [TL, TC, TR, BL, BC, BR];
+    default:
+      return [];
+  }
+}
+
+// RIGHT FACE dot positions (parallelogram)
+// Vertices: (170,58)-(170,138)-(100,176)-(100,96)
+// Center: (135,117)
+// Axis: right col = (+17,-8), down row = (-4,+24)
+function getRightDots(count: number): Array<[number, number]> {
+  const cx = 135;
+  const cy = 117;
+
+  function gp(col: number, row: number): [number, number] {
+    return [cx + col * 17 + row * -4, cy + col * -8 + row * 24];
+  }
+
+  const TL = gp(-1, -1);
+  const TR = gp(1, -1);
+  const ML = gp(-1, 0);
+  const MR = gp(1, 0);
+  const BL = gp(-1, 1);
+  const BR = gp(1, 1);
+  const CC = gp(0, 0);
+
+  switch (count) {
+    case 1:
+      return [CC];
+    case 2:
+      return [TR, BL];
+    case 3:
+      return [TR, CC, BL];
+    case 4:
+      return [TL, TR, BL, BR];
+    case 5:
+      return [TL, TR, CC, BL, BR];
+    case 6:
+      return [TL, TR, ML, MR, BL, BR];
+    default:
+      return [];
+  }
+}
+
+// LEFT FACE dot positions (parallelogram)
+// Vertices: (30,58)-(100,96)-(100,176)-(30,138)
+// Center: (65,117)
+// Axis: right col = (+17,+8), down row = (+4,+24)
+function getLeftDots(count: number): Array<[number, number]> {
+  const cx = 65;
+  const cy = 117;
+
+  function gp(col: number, row: number): [number, number] {
+    return [cx + col * 17 + row * 4, cy + col * 8 + row * 24];
+  }
+
+  const TL = gp(-1, -1);
+  const TR = gp(1, -1);
+  const ML = gp(-1, 0);
+  const MR = gp(1, 0);
+  const BL = gp(-1, 1);
+  const BR = gp(1, 1);
+  const CC = gp(0, 0);
+
+  switch (count) {
+    case 1:
+      return [CC];
+    case 2:
+      return [TL, BR];
+    case 3:
+      return [TL, CC, BR];
+    case 4:
+      return [TL, TR, BL, BR];
+    case 5:
+      return [TL, TR, CC, BL, BR];
+    case 6:
+      return [TL, TR, ML, MR, BL, BR];
+    default:
+      return [];
+  }
+}
+
+function FaceDots({
+  positions,
+  fill,
+  r,
+}: {
+  positions: Array<[number, number]>;
+  fill: string;
+  r: number;
+}) {
+  return (
+    <>
+      {positions.map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill={fill} />
+      ))}
+    </>
+  );
+}
+
+function DiceSVG({
+  rolling,
+  result,
+}: {
+  rolling: boolean;
+  result: number | null;
+}) {
+  const topFace = result ?? 1;
+  const [rightFace, leftFace] = FACE_ADJACENCY[topFace];
+
+  const topDots = getTopDots(topFace);
+  const rightDots = getRightDots(rightFace);
+  const leftDots = getLeftDots(leftFace);
+
   return (
     <svg
       viewBox="0 0 200 200"
@@ -391,9 +558,8 @@ function DiceSVG({ rolling }: { rolling: boolean }) {
         transition: "transform 0.2s ease",
       }}
       role="img"
-      aria-label="Dice — click to roll"
+      aria-label="Dice"
     >
-      {/* === 3D DICE BODY === */}
       {/* Top face */}
       <path
         d="M100 20 L170 58 L100 96 L30 58 Z"
@@ -415,7 +581,6 @@ function DiceSVG({ rolling }: { rolling: boolean }) {
         stroke="#c8e6c9"
         strokeWidth="1.5"
       />
-
       {/* Bottom edge shadow */}
       <path
         d="M30 138 L100 176 L170 138"
@@ -424,32 +589,12 @@ function DiceSVG({ rolling }: { rolling: boolean }) {
         fill="none"
       />
 
-      {/* === DOTS on TOP FACE (showing 5) — isometric projection === */}
-      {/* We show face value 5 on top */}
-      {/* top-left */}
-      <circle cx="66" cy="52" r="5.5" fill="#2e7d32" />
-      {/* top-right */}
-      <circle cx="134" cy="52" r="5.5" fill="#2e7d32" />
-      {/* center */}
-      <circle cx="100" cy="68" r="5.5" fill="#2e7d32" />
-      {/* bottom-left */}
-      <circle cx="66" cy="84" r="5.5" fill="#2e7d32" />
-      {/* bottom-right */}
-      <circle cx="134" cy="84" r="5.5" fill="#2e7d32" />
+      {/* Dots */}
+      <FaceDots positions={topDots} fill="#2e7d32" r={5} />
+      <FaceDots positions={rightDots} fill="#388e3c" r={4} />
+      <FaceDots positions={leftDots} fill="#43a047" r={4} />
 
-      {/* === DOTS on RIGHT FACE (showing 3) === */}
-      {/* top-right of right face */}
-      <circle cx="152" cy="80" r="4.5" fill="#388e3c" />
-      {/* center of right face */}
-      <circle cx="135" cy="117" r="4.5" fill="#388e3c" />
-      {/* bottom-left of right face */}
-      <circle cx="118" cy="154" r="4.5" fill="#388e3c" />
-
-      {/* === DOTS on LEFT FACE (showing 2) === */}
-      <circle cx="48" cy="80" r="4.5" fill="#43a047" />
-      <circle cx="82" cy="154" r="4.5" fill="#43a047" />
-
-      {/* Highlight edge on top */}
+      {/* Highlight edges */}
       <path
         d="M100 20 L170 58"
         stroke="rgba(255,255,255,0.8)"
@@ -463,7 +608,7 @@ function DiceSVG({ rolling }: { rolling: boolean }) {
         strokeLinecap="round"
       />
 
-      {/* Ground shadow ellipse */}
+      {/* Ground shadow */}
       <ellipse cx="100" cy="188" rx="55" ry="8" fill="rgba(0,0,0,0.10)" />
     </svg>
   );
