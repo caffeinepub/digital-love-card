@@ -106,6 +106,11 @@ export default function GameSection({
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
           <input
             ref={boardGameInputRef}
@@ -120,8 +125,8 @@ export default function GameSection({
             data-ocid="game.upload_button"
             onClick={() => boardGameInputRef.current?.click()}
             style={{
-              width: "100%",
-              aspectRatio: "1/1",
+              width: "clamp(180px, 33vw, 270px)",
+              height: "clamp(180px, 33vw, 270px)",
               borderRadius: "24px",
               border: boardGameImageUrl
                 ? "none"
