@@ -39,41 +39,20 @@ export default function BenchScene({
 
         {benchImageUrl ? (
           /* Uploaded photo — large, centered, prominent */
-          <div
+          <img
+            src={benchImageUrl}
+            alt="Us on the bench"
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "24px",
+              maxWidth: "min(90%, 600px)",
+              width: "100%",
+              height: "auto",
+              margin: "0 auto",
+              display: "block",
+              borderRadius: "16px",
+              filter:
+                "drop-shadow(0 8px 32px rgba(63,90,58,0.22)) drop-shadow(0 2px 8px rgba(63,90,58,0.12))",
             }}
-          >
-            <img
-              src={benchImageUrl}
-              alt="Us on the bench"
-              style={{
-                maxWidth: "min(90%, 600px)",
-                width: "100%",
-                height: "auto",
-                margin: "0 auto",
-                display: "block",
-                borderRadius: "16px",
-                filter:
-                  "drop-shadow(0 8px 32px rgba(63,90,58,0.22)) drop-shadow(0 2px 8px rgba(63,90,58,0.12))",
-              }}
-            />
-            {/* Bench illustration as a small decorative footer */}
-            <img
-              src="/assets/generated/bench-scene-transparent.dim_700x450.png"
-              alt="Wooden bench"
-              style={{
-                width: "340px",
-                maxWidth: "80%",
-                height: "auto",
-                opacity: 0.6,
-                filter: "drop-shadow(0 4px 12px rgba(63,90,58,0.1))",
-              }}
-            />
-          </div>
+          />
         ) : (
           /* No image yet — show bench illustration with hint */
           <div
