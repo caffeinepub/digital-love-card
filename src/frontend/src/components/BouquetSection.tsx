@@ -115,7 +115,7 @@ export default function BouquetSection({
         </p>
 
         {/*
-          Increased size: min(600px, 94vw) from min(420px, 92vw).
+          Increased size: min(820px, 98vw) for a bigger bouquet display.
           Large generous padding so the drop-shadow is never clipped.
           overflow: visible on all wrappers ensures nothing cuts the image.
         */}
@@ -126,10 +126,10 @@ export default function BouquetSection({
           style={{
             cursor: "pointer",
             display: "block",
-            width: "min(600px, 94vw)",
+            width: "min(820px, 98vw)",
             margin: "0 auto",
-            paddingTop: "32px",
-            paddingBottom: "32px",
+            paddingTop: "48px",
+            paddingBottom: "48px",
             overflow: "visible",
             boxSizing: "content-box",
           }}
