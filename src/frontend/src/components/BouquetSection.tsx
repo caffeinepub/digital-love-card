@@ -6,47 +6,54 @@ const FLOWER_MEANINGS = [
     flower: "Sunflower",
     color: "#f5c518",
     meaning: "adoration, loyalty, longevity",
-    emoji: "🌻",
+    img: "/assets/generated/flower-sunflower-transparent.dim_200x200.png",
   },
   {
     flower: "Lavender",
     color: "#9b7fc4",
     meaning: "serenity, calmness, devotion",
-    emoji: "💜",
+    img: "/assets/generated/flower-lavender-transparent.dim_200x200.png",
+  },
+  {
+    flower: "Baby's Breath",
+    color: "#e8f4f0",
+    meaning: "purity, innocence, everlasting love",
+    img: null,
   },
   {
     flower: "Tulips",
     color: "#e85d8a",
     meaning: "declaration of love, perfect love",
-    emoji: "🌷",
+    img: "/assets/generated/flower-tulip-transparent.dim_200x200.png",
   },
   {
     flower: "Chrysanthemums",
     color: "#f8e07a",
     meaning: "loyalty, friendship, abundance",
-    emoji: "🌼",
-  },
-  {
-    flower: "Daisies",
-    color: "#ffffff",
-    meaning: "happiness, innocence, simplicity",
-    emoji: "🌸",
+    img: "/assets/generated/flower-chrysanthemum-transparent.dim_200x200.png",
   },
   {
     flower: "Carnation",
     color: "#f4a0c0",
     meaning: "affection, adoration, love",
-    emoji: "🌺",
+    img: "/assets/generated/flower-carnation-transparent.dim_200x200.png",
   },
   {
     flower: "Peonies",
     color: "#f9b4c9",
     meaning: "prosperity, good fortune, romance",
-    emoji: "🌹",
+    img: "/assets/generated/flower-peony-transparent.dim_200x200.png",
+  },
+  {
+    flower: "Daisies",
+    color: "#ffffff",
+    meaning: "happiness, innocence, simplicity",
+    img: "/assets/generated/flower-daisy-transparent.dim_200x200.png",
   },
 ];
 
-const FALLBACK_BOUQUET = "/assets/generated/bouquet-realistic.dim_800x900.png";
+const BOUQUET_IMG =
+  "/assets/generated/bouquet-watercolor-sathwik-transparent.dim_600x750.png";
 
 interface BouquetSectionProps {
   bouquetImageUrl?: string;
@@ -57,7 +64,8 @@ export default function BouquetSection({
 }: BouquetSectionProps) {
   const [open, setOpen] = useState(false);
 
-  const imageSrc = bouquetImageUrl || FALLBACK_BOUQUET;
+  // Always use the watercolor image; user-uploaded replaces it
+  const imageSrc = bouquetImageUrl || BOUQUET_IMG;
 
   return (
     <section
@@ -108,15 +116,14 @@ export default function BouquetSection({
             cursor: "pointer",
             display: "inline-block",
             borderRadius: "20px",
-            overflow: "hidden",
-            boxShadow: "0 12px 40px rgba(58,90,64,0.18)",
-            maxWidth: "420px",
+            overflow: "visible",
+            maxWidth: "380px",
             width: "100%",
           }}
         >
           <img
             src={imageSrc}
-            alt="Beautiful bouquet of sunflowers, lavender, tulips, chrysanthemums, daisies, carnations and peonies wrapped in white organza with a green ribbon"
+            alt="Watercolour bouquet of sunflowers, lavender, baby's breath, tulips, chrysanthemums, carnations, peonies and daisies wrapped in sheer white cloth with a green ribbon for sathwik"
             style={{
               width: "100%",
               height: "auto",
@@ -124,21 +131,10 @@ export default function BouquetSection({
               objectFit: "contain",
               objectPosition: "center",
               background: "transparent",
+              filter: "drop-shadow(0 12px 28px rgba(58,90,64,0.18))",
             }}
           />
         </motion.div>
-
-        {/* Subtle click hint */}
-        <p
-          style={{
-            fontFamily: "'Great Vibes', cursive",
-            fontSize: "1rem",
-            color: "#5a8a60",
-            marginTop: "12px",
-          }}
-        >
-          ✿ for sathwik ✿
-        </p>
       </motion.div>
 
       {/* Flower meanings modal */}
@@ -196,7 +192,7 @@ export default function BouquetSection({
                   gap: "12px",
                 }}
               >
-                {FLOWER_MEANINGS.map(({ flower, color, meaning, emoji }) => (
+                {FLOWER_MEANINGS.map(({ flower, color, meaning, img }) => (
                   <div
                     key={flower}
                     style={{
@@ -209,22 +205,34 @@ export default function BouquetSection({
                       border: `2px solid ${color}44`,
                     }}
                   >
-                    {/* Color swatch dot */}
+                    {/* Flower swatch */}
                     <div
                       style={{
-                        width: "36px",
-                        height: "36px",
+                        width: "42px",
+                        height: "42px",
                         borderRadius: "50%",
-                        background: color,
-                        border: "2px solid rgba(0,0,0,0.08)",
+                        background: img ? "transparent" : color,
+                        border: img ? "none" : "2px solid rgba(0,0,0,0.08)",
                         flexShrink: 0,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "1.1rem",
+                        overflow: "hidden",
                       }}
                     >
-                      {emoji}
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={flower}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "1.4rem" }}>✿</span>
+                      )}
                     </div>
                     <div style={{ textAlign: "left" }}>
                       <div

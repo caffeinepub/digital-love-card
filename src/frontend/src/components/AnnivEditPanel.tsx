@@ -11,7 +11,7 @@ const POEM_SLOTS = [
   { id: "pslot-6", pos: 5 },
 ];
 
-const POL_SLOTS = Array.from({ length: 10 }, (_, i) => ({
+const POL_SLOTS = Array.from({ length: 20 }, (_, i) => ({
   id: `polslot-${i}`,
   pos: i,
 }));
@@ -792,7 +792,7 @@ export default function AnnivEditPanel({
                         margin: "0 0 12px 0",
                       }}
                     >
-                      Polaroid photos (10 slots)
+                      Polaroid photos (20 slots — 10 per string)
                     </p>
                     <div
                       style={{

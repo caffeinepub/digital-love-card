@@ -11,22 +11,25 @@ export interface PolaroidItem {
 
 export interface AnnivContent {
   poems: string[]; // 6 poems for dice rolls
-  boardGameImageUrl: string; // uploaded/URL
-  polaroids: PolaroidItem[]; // 10 slots
+  boardGameImageUrl: string;
+  polaroids: PolaroidItem[]; // 20 slots (2 strings × 10)
   audioDataUrl: string;
   audioFileName: string;
-  character1Url: string; // bench character 1
-  character2Url: string; // bench character 2
-  bouquetImageUrl: string; // uploaded bouquet image
-  treasuresImageUrl: string; // uploaded little treasures image
+  character1Url: string;
+  character2Url: string;
+  bouquetImageUrl: string;
+  treasuresImageUrl: string;
 }
 
-const DEFAULT_ROTATIONS = [-4, 3, -2, 5, -3, 3, -5, 2, -3, 4];
+const TOTAL_POLAROIDS = 20;
+const DEFAULT_ROTATIONS = [
+  -4, 3, -2, 5, -3, 3, -5, 2, -3, 4, -3, 5, -4, 2, -3, 4, -2, 3, -5, 2,
+];
 
 const DEFAULT_CONTENT: AnnivContent = {
   poems: [...DEFAULT_POEMS],
   boardGameImageUrl: "",
-  polaroids: Array.from({ length: 10 }, (_, i) => ({
+  polaroids: Array.from({ length: TOTAL_POLAROIDS }, (_, i) => ({
     src: "",
     caption: "",
     rotation: DEFAULT_ROTATIONS[i],
@@ -41,12 +44,12 @@ const DEFAULT_CONTENT: AnnivContent = {
 
 /**
  * Image slot mapping:
- * uploadedImages[0]   = board game image
- * uploadedImages[1]   = bench character 1
- * uploadedImages[2]   = bench character 2
- * uploadedImages[3..12] = polaroids 0-9
- * uploadedImages[13]  = bouquet image
- * uploadedImages[14]  = little treasures image
+ * uploadedImages[0]       = board game image
+ * uploadedImages[1]       = bench character 1
+ * uploadedImages[2]       = bench character 2
+ * uploadedImages[3..22]   = polaroids 0-19
+ * uploadedImages[23]      = bouquet image
+ * uploadedImages[24]      = little treasures image
  */
 export function useAnnivContent() {
   const { actor, isFetching } = useActor();
@@ -102,7 +105,7 @@ export function useAnnivContent() {
               poems = parsed.poems;
             }
           } catch {
-            // ignore
+            /* ignore */
           }
         }
 
@@ -112,8 +115,9 @@ export function useAnnivContent() {
         const character1Url = imgs[1] ? imgs[1].getDirectURL() : "";
         const character2Url = imgs[2] ? imgs[2].getDirectURL() : "";
 
+        // polaroids: slots 3..22
         const polaroids: PolaroidItem[] = Array.from(
-          { length: 10 },
+          { length: TOTAL_POLAROIDS },
           (_, i) => ({
             src: imgs[3 + i] ? imgs[3 + i].getDirectURL() : "",
             caption: "",
@@ -122,10 +126,13 @@ export function useAnnivContent() {
         );
 
         if (backendContent.galleryPhotos?.length) {
-          backendContent.galleryPhotos.slice(0, 10).forEach((gp, i) => {
-            polaroids[i].caption = gp.caption || "";
-            polaroids[i].rotation = Number(gp.rotation) || DEFAULT_ROTATIONS[i];
-          });
+          backendContent.galleryPhotos
+            .slice(0, TOTAL_POLAROIDS)
+            .forEach((gp, i) => {
+              polaroids[i].caption = gp.caption || "";
+              polaroids[i].rotation =
+                Number(gp.rotation) || DEFAULT_ROTATIONS[i];
+            });
         }
 
         let audioDataUrl = "";
@@ -134,8 +141,9 @@ export function useAnnivContent() {
           audioDataUrl = backendContent.uploadedAudio[0].getDirectURL();
         }
 
-        const bouquetImageUrl = imgs[13] ? imgs[13].getDirectURL() : "";
-        const treasuresImageUrl = imgs[14] ? imgs[14].getDirectURL() : "";
+        // bouquet: slot 23, treasures: slot 24
+        const bouquetImageUrl = imgs[23] ? imgs[23].getDirectURL() : "";
+        const treasuresImageUrl = imgs[24] ? imgs[24].getDirectURL() : "";
 
         if (!cancelled) {
           setContent({
@@ -151,7 +159,7 @@ export function useAnnivContent() {
           });
         }
       } catch {
-        // keep defaults
+        /* keep defaults */
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -285,7 +293,6 @@ export function useAnnivContent() {
       uploadedAudio = await actor.listAudio();
     }
 
-    // Helper to ensure slot exists and upload
     let uploadedImages = await actor.listImages();
 
     async function ensureSlotAndUpload(
@@ -308,43 +315,39 @@ export function useAnnivContent() {
     // Slot 0: board game
     if (pendingBoardGameRef.current) {
       await ensureSlotAndUpload(0, pendingBoardGameRef.current.bytes);
-      if (uploadedImages[0]) {
+      if (uploadedImages[0])
         setContent((prev) => ({
           ...prev,
           boardGameImageUrl: uploadedImages[0].getDirectURL(),
         }));
-      }
       pendingBoardGameRef.current = null;
     }
 
     // Slot 1: character 1
     if (pendingCharacter1Ref.current) {
       await ensureSlotAndUpload(1, pendingCharacter1Ref.current.bytes);
-      if (uploadedImages[1]) {
+      if (uploadedImages[1])
         setContent((prev) => ({
           ...prev,
           character1Url: uploadedImages[1].getDirectURL(),
         }));
-      }
       pendingCharacter1Ref.current = null;
     }
 
     // Slot 2: character 2
     if (pendingCharacter2Ref.current) {
       await ensureSlotAndUpload(2, pendingCharacter2Ref.current.bytes);
-      if (uploadedImages[2]) {
+      if (uploadedImages[2])
         setContent((prev) => ({
           ...prev,
           character2Url: uploadedImages[2].getDirectURL(),
         }));
-      }
       pendingCharacter2Ref.current = null;
     }
 
-    // Slots 3-12: polaroids
-    const pendingPolaroids = pendingPolaroidsRef.current;
-    if (pendingPolaroids.size > 0) {
-      for (const [index, { bytes }] of pendingPolaroids) {
+    // Slots 3-22: polaroids 0-19
+    if (pendingPolaroidsRef.current.size > 0) {
+      for (const [index, { bytes }] of pendingPolaroidsRef.current) {
         const slotIndex = index + 3;
         await ensureSlotAndUpload(slotIndex, bytes);
         if (uploadedImages[slotIndex]) {
@@ -361,27 +364,25 @@ export function useAnnivContent() {
       pendingPolaroidsRef.current = new Map();
     }
 
-    // Slot 13: bouquet
+    // Slot 23: bouquet
     if (pendingBouquetRef.current) {
-      await ensureSlotAndUpload(13, pendingBouquetRef.current.bytes);
-      if (uploadedImages[13]) {
+      await ensureSlotAndUpload(23, pendingBouquetRef.current.bytes);
+      if (uploadedImages[23])
         setContent((prev) => ({
           ...prev,
-          bouquetImageUrl: uploadedImages[13].getDirectURL(),
+          bouquetImageUrl: uploadedImages[23].getDirectURL(),
         }));
-      }
       pendingBouquetRef.current = null;
     }
 
-    // Slot 14: little treasures
+    // Slot 24: little treasures
     if (pendingTreasuresRef.current) {
-      await ensureSlotAndUpload(14, pendingTreasuresRef.current.bytes);
-      if (uploadedImages[14]) {
+      await ensureSlotAndUpload(24, pendingTreasuresRef.current.bytes);
+      if (uploadedImages[24])
         setContent((prev) => ({
           ...prev,
-          treasuresImageUrl: uploadedImages[14].getDirectURL(),
+          treasuresImageUrl: uploadedImages[24].getDirectURL(),
         }));
-      }
       pendingTreasuresRef.current = null;
     }
 

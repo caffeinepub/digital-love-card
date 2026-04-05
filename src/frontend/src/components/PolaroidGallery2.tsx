@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 export interface PolaroidData {
   src: string;
@@ -35,7 +35,7 @@ function WoodClip() {
   );
 }
 
-// Pre-computed delay values avoid array index in JSX key
+// Pre-computed delay values
 const LIGHT_DELAYS_9 = [0, 0.22, 0.44, 0.66, 0.88, 1.1, 1.32, 1.54, 1.76];
 const LIGHT_IDS_9 = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"];
 
@@ -79,8 +79,11 @@ const PLACEHOLDER_COLORS = [
   "#d0ecda",
 ];
 
-// Responsive card size using clamp
-const CARD_SIZE = "clamp(80px, 18vw, 130px)";
+const CARD_WIDTH = 130;
+const CARD_GAP = 14;
+// 4 cards visible + gaps
+const VISIBLE = 4;
+const STRIDE = CARD_WIDTH + CARD_GAP;
 
 function PolaroidCard({
   src,
@@ -120,7 +123,13 @@ function PolaroidCard({
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        flexShrink: 0,
+        width: `${CARD_WIDTH}px`,
+      }}
     >
       <WoodClip />
       <motion.div
@@ -144,11 +153,11 @@ function PolaroidCard({
             aria-label={`Upload polaroid ${index + 1}`}
           />
         )}
-        {/* Photo area — responsive clamp size */}
+        {/* Photo area */}
         <div
           style={{
-            width: CARD_SIZE,
-            height: CARD_SIZE,
+            width: `${CARD_WIDTH}px`,
+            height: `${CARD_WIDTH}px`,
             background: src
               ? undefined
               : PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length],
@@ -198,10 +207,10 @@ function PolaroidCard({
             </div>
           )}
         </div>
-        {/* Caption — matches photo width */}
+        {/* Caption */}
         <div
           style={{
-            width: CARD_SIZE,
+            width: `${CARD_WIDTH}px`,
             paddingTop: "6px",
             fontFamily: "'Great Vibes', cursive",
             fontSize: "0.85rem",
@@ -218,44 +227,287 @@ function PolaroidCard({
   );
 }
 
-// Stable slot IDs for rows
-const ROW1_SLOTS = [
-  { id: "p0", pos: 0 },
-  { id: "p1", pos: 1 },
-  { id: "p2", pos: 2 },
-  { id: "p3", pos: 3 },
-  { id: "p4", pos: 4 },
-];
-const ROW2_SLOTS = [
-  { id: "p5", pos: 0, globalIndex: 5 },
-  { id: "p6", pos: 1, globalIndex: 6 },
-  { id: "p7", pos: 2, globalIndex: 7 },
-  { id: "p8", pos: 3, globalIndex: 8 },
-  { id: "p9", pos: 4, globalIndex: 9 },
-];
+const DEFAULT_ROT_10 = [-4, 3, -2, 5, -3, 3, -5, 2, -3, 4];
 
-const DEFAULT_ROT1 = [-4, 3, -2, 5, -3];
-const DEFAULT_ROT2 = [3, -5, 2, -3, 4];
+// Pre-computed stable keys for 10 card slots and 7 dot positions
+const CARD_SLOT_IDS_0 = [
+  "s0c0",
+  "s0c1",
+  "s0c2",
+  "s0c3",
+  "s0c4",
+  "s0c5",
+  "s0c6",
+  "s0c7",
+  "s0c8",
+  "s0c9",
+];
+const CARD_SLOT_IDS_10 = [
+  "s1c0",
+  "s1c1",
+  "s1c2",
+  "s1c3",
+  "s1c4",
+  "s1c5",
+  "s1c6",
+  "s1c7",
+  "s1c8",
+  "s1c9",
+];
+const DOT_IDS_0 = ["d0-0", "d0-1", "d0-2", "d0-3", "d0-4", "d0-5", "d0-6"];
+const DOT_IDS_10 = ["d1-0", "d1-1", "d1-2", "d1-3", "d1-4", "d1-5", "d1-6"];
 
-// Shared row scroll style — hidden scrollbar, padded edges
-const rowScrollStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "center",
-  gap: "clamp(6px, 2vw, 18px)",
-  flexWrap: "nowrap",
-  overflowX: "auto",
-  paddingBottom: "4px",
-  paddingLeft: "8px",
-  paddingRight: "8px",
-  scrollbarWidth: "none",
-  msOverflowStyle: "none",
-};
+// A single swipeable string of 10 polaroids showing 4 at a time
+function PolaroidString({
+  startIndex,
+  cardIds,
+  dotIds,
+  polaroids,
+  onUpload,
+  editMode,
+}: {
+  startIndex: number;
+  cardIds: string[];
+  dotIds: string[];
+  polaroids: PolaroidData[];
+  onUpload?: (
+    index: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
+  editMode?: boolean;
+}) {
+  const [page, setPage] = useState(0);
+  const totalSlots = 10;
+  const maxPage = totalSlots - VISIBLE; // 6 pages (indices 0..6)
+
+  // Touch / pointer drag tracking
+  const dragStartX = useRef<number | null>(null);
+  const dragDelta = useRef(0);
+  const [dragging, setDragging] = useState(false);
+
+  function onPointerDown(e: React.PointerEvent) {
+    dragStartX.current = e.clientX;
+    dragDelta.current = 0;
+    setDragging(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartX.current === null) return;
+    dragDelta.current = e.clientX - dragStartX.current;
+  }
+
+  function onPointerUp() {
+    if (dragStartX.current === null) return;
+    const delta = dragDelta.current;
+    const threshold = 40;
+    if (delta < -threshold) {
+      // swipe left → next
+      setPage((p) => Math.min(p + 1, maxPage));
+    } else if (delta > threshold) {
+      // swipe right → prev
+      setPage((p) => Math.max(p - 1, 0));
+    }
+    dragStartX.current = null;
+    dragDelta.current = 0;
+    setDragging(false);
+  }
+
+  // Arrow navigation
+  function prev() {
+    setPage((p) => Math.max(p - 1, 0));
+  }
+  function next() {
+    setPage((p) => Math.min(p + 1, maxPage));
+  }
+
+  // Viewport width = 4 cards + 3 gaps
+  const viewportWidth = VISIBLE * STRIDE - CARD_GAP;
+  // Offset = page * one card stride
+  const offsetX = -(page * STRIDE);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.7 }}
+      style={{ marginBottom: "48px", position: "relative" }}
+    >
+      {/* Thread with fairy lights */}
+      <div style={{ position: "relative", height: "20px", marginBottom: "0" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: "5%",
+            right: "5%",
+            height: "2px",
+            background:
+              "linear-gradient(90deg, rgba(139,105,20,0.3) 0%, rgba(139,105,20,0.6) 50%, rgba(139,105,20,0.3) 100%)",
+            borderRadius: "1px",
+          }}
+        />
+        <FairyLights />
+      </div>
+
+      {/* Swipeable viewport */}
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "12px",
+        }}
+      >
+        {/* Left arrow */}
+        <button
+          type="button"
+          aria-label="Previous polaroids"
+          onClick={prev}
+          disabled={page === 0}
+          style={{
+            flexShrink: 0,
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            border: "1.5px solid rgba(111,191,115,0.5)",
+            background:
+              page === 0 ? "rgba(216,243,220,0.3)" : "rgba(216,243,220,0.8)",
+            cursor: page === 0 ? "default" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "1rem",
+            color: page === 0 ? "rgba(90,138,96,0.3)" : "#3a5a40",
+            transition: "all 0.2s ease",
+            boxShadow: page === 0 ? "none" : "0 2px 8px rgba(58,90,64,0.15)",
+          }}
+        >
+          ‹
+        </button>
+
+        {/* Clipping window */}
+        <div
+          style={{
+            width: `${viewportWidth}px`,
+            overflow: "hidden",
+            cursor: dragging ? "grabbing" : "grab",
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          {/* Sliding track — all 10 cards side by side */}
+          <motion.div
+            style={{
+              display: "flex",
+              gap: `${CARD_GAP}px`,
+              userSelect: "none",
+            }}
+            animate={{ x: offsetX }}
+            transition={{ type: "spring", stiffness: 280, damping: 30 }}
+          >
+            {cardIds.map((cid, i) => {
+              const globalIdx = startIndex + i;
+              const p = polaroids[globalIdx] ?? {
+                src: "",
+                caption: "",
+                rotation: 0,
+              };
+              return (
+                <PolaroidCard
+                  key={cid}
+                  src={p.src}
+                  caption={p.caption}
+                  rotation={p.rotation || DEFAULT_ROT_10[i % 10]}
+                  index={globalIdx}
+                  onUpload={onUpload}
+                  editMode={editMode}
+                />
+              );
+            })}
+          </motion.div>
+        </div>
+
+        {/* Right arrow */}
+        <button
+          type="button"
+          aria-label="Next polaroids"
+          onClick={next}
+          disabled={page >= maxPage}
+          style={{
+            flexShrink: 0,
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            border: "1.5px solid rgba(111,191,115,0.5)",
+            background:
+              page >= maxPage
+                ? "rgba(216,243,220,0.3)"
+                : "rgba(216,243,220,0.8)",
+            cursor: page >= maxPage ? "default" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "1rem",
+            color: page >= maxPage ? "rgba(90,138,96,0.3)" : "#3a5a40",
+            transition: "all 0.2s ease",
+            boxShadow:
+              page >= maxPage ? "none" : "0 2px 8px rgba(58,90,64,0.15)",
+          }}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Dot indicators */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "6px",
+          marginTop: "12px",
+        }}
+      >
+        {dotIds.map((did, i) => (
+          <button
+            key={did}
+            type="button"
+            aria-label={`Go to position ${i + 1}`}
+            onClick={() => setPage(i)}
+            style={{
+              width: page === i ? "16px" : "6px",
+              height: "6px",
+              borderRadius: "3px",
+              border: "none",
+              background: page === i ? "#5a8a60" : "rgba(90,138,96,0.3)",
+              cursor: "pointer",
+              padding: 0,
+              transition: "all 0.25s ease",
+            }}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function PolaroidGallery2({
   polaroids,
   onUpload,
   editMode = false,
 }: PolaroidGallery2Props) {
+  // Ensure we have at least 20 slots (2 strings × 10 each)
+  const paddedPolaroids = [...polaroids];
+  while (paddedPolaroids.length < 20) {
+    paddedPolaroids.push({ src: "", caption: "", rotation: 0 });
+  }
+
   return (
     <section
       data-ocid="polaroid.section"
@@ -281,101 +533,25 @@ export default function PolaroidGallery2({
         moments we collected
       </motion.h2>
 
-      {/* Row 1 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-        style={{ marginBottom: "40px", position: "relative" }}
-      >
-        <div
-          style={{ position: "relative", height: "16px", marginBottom: "0" }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "8px",
-              left: "5%",
-              right: "5%",
-              height: "2px",
-              background:
-                "linear-gradient(90deg, rgba(139,105,20,0.3) 0%, rgba(139,105,20,0.6) 50%, rgba(139,105,20,0.3) 100%)",
-              borderRadius: "1px",
-            }}
-          />
-          <FairyLights />
-        </div>
+      {/* String 1 — polaroids 0-9 */}
+      <PolaroidString
+        startIndex={0}
+        cardIds={CARD_SLOT_IDS_0}
+        dotIds={DOT_IDS_0}
+        polaroids={paddedPolaroids}
+        onUpload={onUpload}
+        editMode={editMode}
+      />
 
-        <div style={rowScrollStyle}>
-          {ROW1_SLOTS.map((slot) => {
-            const p = polaroids[slot.pos] ?? {
-              src: "",
-              caption: "",
-              rotation: 0,
-            };
-            return (
-              <PolaroidCard
-                key={slot.id}
-                src={p.src}
-                caption={p.caption}
-                rotation={p.rotation || DEFAULT_ROT1[slot.pos]}
-                index={slot.pos}
-                onUpload={onUpload}
-                editMode={editMode}
-              />
-            );
-          })}
-        </div>
-      </motion.div>
-
-      {/* Row 2 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7, delay: 0.1 }}
-        style={{ position: "relative" }}
-      >
-        <div
-          style={{ position: "relative", height: "16px", marginBottom: "0" }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "8px",
-              left: "5%",
-              right: "5%",
-              height: "2px",
-              background:
-                "linear-gradient(90deg, rgba(139,105,20,0.3) 0%, rgba(139,105,20,0.6) 50%, rgba(139,105,20,0.3) 100%)",
-              borderRadius: "1px",
-            }}
-          />
-          <FairyLights />
-        </div>
-
-        <div style={rowScrollStyle}>
-          {ROW2_SLOTS.map((slot) => {
-            const p = polaroids[slot.globalIndex] ?? {
-              src: "",
-              caption: "",
-              rotation: 0,
-            };
-            return (
-              <PolaroidCard
-                key={slot.id}
-                src={p.src}
-                caption={p.caption}
-                rotation={p.rotation || DEFAULT_ROT2[slot.pos]}
-                index={slot.globalIndex}
-                onUpload={onUpload}
-                editMode={editMode}
-              />
-            );
-          })}
-        </div>
-      </motion.div>
+      {/* String 2 — polaroids 10-19 */}
+      <PolaroidString
+        startIndex={10}
+        cardIds={CARD_SLOT_IDS_10}
+        dotIds={DOT_IDS_10}
+        polaroids={paddedPolaroids}
+        onUpload={onUpload}
+        editMode={editMode}
+      />
     </section>
   );
 }
