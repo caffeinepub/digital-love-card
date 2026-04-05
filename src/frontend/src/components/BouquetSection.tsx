@@ -6,49 +6,49 @@ const FLOWER_MEANINGS = [
     flower: "Sunflower",
     color: "#f5c518",
     meaning: "adoration, loyalty, longevity",
-    img: "/assets/generated/flower-sunflower-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-sunflower-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Lavender",
     color: "#9b7fc4",
     meaning: "serenity, calmness, devotion",
-    img: "/assets/generated/flower-lavender-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-lavender-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Baby's Breath",
     color: "#e8f4f0",
     meaning: "purity, innocence, everlasting love",
-    img: null,
+    img: "/assets/generated/flower-babysbreath-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Tulips",
     color: "#e85d8a",
     meaning: "declaration of love, perfect love",
-    img: "/assets/generated/flower-tulip-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-tulip-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Chrysanthemums",
     color: "#f8e07a",
     meaning: "loyalty, friendship, abundance",
-    img: "/assets/generated/flower-chrysanthemum-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-chrysanthemum-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Carnation",
     color: "#f4a0c0",
     meaning: "affection, adoration, love",
-    img: "/assets/generated/flower-carnation-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-carnation-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Peonies",
     color: "#f9b4c9",
     meaning: "prosperity, good fortune, romance",
-    img: "/assets/generated/flower-peony-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-peony-watercolour-transparent.dim_200x200.png",
   },
   {
     flower: "Daisies",
     color: "#ffffff",
     meaning: "happiness, innocence, simplicity",
-    img: "/assets/generated/flower-daisy-transparent.dim_200x200.png",
+    img: "/assets/generated/flower-daisy-watercolour-transparent.dim_200x200.png",
   },
 ];
 
@@ -115,6 +115,7 @@ export default function BouquetSection({
         </p>
 
         {/*
+          Increased size: min(600px, 94vw) from min(420px, 92vw).
           Large generous padding so the drop-shadow is never clipped.
           overflow: visible on all wrappers ensures nothing cuts the image.
         */}
@@ -125,7 +126,7 @@ export default function BouquetSection({
           style={{
             cursor: "pointer",
             display: "block",
-            width: "min(420px, 92vw)",
+            width: "min(600px, 94vw)",
             margin: "0 auto",
             paddingTop: "32px",
             paddingBottom: "32px",
@@ -216,11 +217,13 @@ export default function BouquetSection({
                   >
                     <div
                       style={{
-                        width: "42px",
-                        height: "42px",
+                        width: "64px",
+                        height: "64px",
                         borderRadius: "50%",
-                        background: img ? "transparent" : color,
-                        border: img ? "none" : "2px solid rgba(0,0,0,0.08)",
+                        background: img ? "#f8fdf9" : color,
+                        border: img
+                          ? `2px solid ${color}55`
+                          : "2px solid rgba(0,0,0,0.08)",
                         flexShrink: 0,
                         display: "flex",
                         alignItems: "center",
