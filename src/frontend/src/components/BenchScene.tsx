@@ -1,14 +1,10 @@
 import { motion } from "motion/react";
 
 interface BenchSceneProps {
-  character1Url?: string;
-  character2Url?: string;
+  benchImageUrl?: string;
 }
 
-export default function BenchScene({
-  character1Url,
-  character2Url,
-}: BenchSceneProps) {
+export default function BenchScene({ benchImageUrl }: BenchSceneProps) {
   return (
     <section
       data-ocid="bench.section"
@@ -36,79 +32,76 @@ export default function BenchScene({
           us, always
         </p>
 
-        {/* Bench scene: characters on either side of bench illustration */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "center",
-            gap: "0px",
-            position: "relative",
-            maxWidth: "640px",
-            margin: "0 auto",
-          }}
-        >
-          {character1Url && (
-            <img
-              src={character1Url}
-              alt="Character 1"
-              style={{
-                height: "clamp(160px, 28vw, 220px)",
-                width: "auto",
-                objectFit: "contain",
-                filter: "drop-shadow(0 6px 16px rgba(63,90,58,0.14))",
-                position: "relative",
-                zIndex: 2,
-                marginRight: "-20px",
-              }}
-            />
-          )}
-          <img
-            src="/assets/generated/bench-scene-transparent.dim_700x450.png"
-            alt="Wooden bench"
+        {benchImageUrl ? (
+          /* Uploaded photo — large, centered, prominent */
+          <div
             style={{
-              maxWidth: character1Url || character2Url ? "360px" : "600px",
-              width: character1Url || character2Url ? "55%" : "100%",
-              height: "auto",
-              filter: "drop-shadow(0 8px 28px rgba(63,90,58,0.16))",
-              position: "relative",
-              zIndex: 1,
-            }}
-            className="float-slow"
-          />
-          {character2Url && (
-            <img
-              src={character2Url}
-              alt="Character 2"
-              style={{
-                height: "clamp(160px, 28vw, 220px)",
-                width: "auto",
-                objectFit: "contain",
-                filter: "drop-shadow(0 6px 16px rgba(63,90,58,0.14))",
-                position: "relative",
-                zIndex: 2,
-                marginLeft: "-20px",
-              }}
-            />
-          )}
-        </div>
-
-        {(!character1Url || !character2Url) && (
-          <p
-            style={{
-              fontFamily: "'Lora', Georgia, serif",
-              fontSize: "0.78rem",
-              color: "#7a9e7e",
-              fontStyle: "italic",
-              marginTop: "16px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "24px",
             }}
           >
-            {!character1Url && !character2Url
-              ? "Upload your character PNGs via the edit panel to sit on the bench 🪑"
-              : !character1Url
-                ? "Upload the first character PNG via the edit panel ✨"
-                : "Upload the second character PNG via the edit panel ✨"}
-          </p>
+            <img
+              src={benchImageUrl}
+              alt="Us on the bench"
+              style={{
+                maxWidth: "min(90%, 600px)",
+                width: "100%",
+                height: "auto",
+                margin: "0 auto",
+                display: "block",
+                borderRadius: "16px",
+                filter:
+                  "drop-shadow(0 8px 32px rgba(63,90,58,0.22)) drop-shadow(0 2px 8px rgba(63,90,58,0.12))",
+              }}
+            />
+            {/* Bench illustration as a small decorative footer */}
+            <img
+              src="/assets/generated/bench-scene-transparent.dim_700x450.png"
+              alt="Wooden bench"
+              style={{
+                width: "340px",
+                maxWidth: "80%",
+                height: "auto",
+                opacity: 0.6,
+                filter: "drop-shadow(0 4px 12px rgba(63,90,58,0.1))",
+              }}
+            />
+          </div>
+        ) : (
+          /* No image yet — show bench illustration with hint */
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <img
+              src="/assets/generated/bench-scene-transparent.dim_700x450.png"
+              alt="Wooden bench"
+              style={{
+                maxWidth: "min(100%, 600px)",
+                width: "100%",
+                height: "auto",
+                filter: "drop-shadow(0 8px 28px rgba(63,90,58,0.16))",
+              }}
+              className="float-slow"
+            />
+            <p
+              style={{
+                fontFamily: "'Lora', Georgia, serif",
+                fontSize: "0.78rem",
+                color: "#7a9e7e",
+                fontStyle: "italic",
+                margin: 0,
+              }}
+            >
+              Upload your bench photo via the edit panel 🪑
+            </p>
+          </div>
         )}
       </motion.div>
     </section>

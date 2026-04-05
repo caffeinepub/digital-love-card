@@ -24,8 +24,7 @@ export default function App() {
     content,
     setPoems,
     uploadBoardGame,
-    uploadCharacter1,
-    uploadCharacter2,
+    uploadBenchImage,
     uploadPolaroid,
     updatePolaroidCaption,
     uploadBouquet,
@@ -109,10 +108,7 @@ export default function App() {
           poems={content.poems}
           onPoemsChange={setPoems}
         />
-        <BenchScene
-          character1Url={content.character1Url}
-          character2Url={content.character2Url}
-        />
+        <BenchScene benchImageUrl={content.benchImageUrl} />
         <MemoryBed treasuresImageUrl={content.treasuresImageUrl} />
         <OrnamDivider />
         <PolaroidGallery2
@@ -189,8 +185,7 @@ export default function App() {
         boardGameImageUrl={content.boardGameImageUrl}
         polaroids={content.polaroids}
         onUploadBoardGame={uploadBoardGame}
-        onUploadCharacter1={uploadCharacter1}
-        onUploadCharacter2={uploadCharacter2}
+        onUploadBenchImage={uploadBenchImage}
         onUploadPolaroid={uploadPolaroid}
         onUpdatePolaroidCaption={updatePolaroidCaption}
         onUploadBouquet={uploadBouquet}
@@ -200,8 +195,7 @@ export default function App() {
         audioFileName={content.audioFileName}
         setAudio={setAudio}
         clearAudio={clearAudio}
-        character1Url={content.character1Url}
-        character2Url={content.character2Url}
+        benchImageUrl={content.benchImageUrl}
         bouquetImageUrl={content.bouquetImageUrl}
       />
     </>

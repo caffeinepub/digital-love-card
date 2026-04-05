@@ -15,8 +15,7 @@ export interface AnnivContent {
   polaroids: PolaroidItem[]; // 20 slots (2 strings × 10)
   audioDataUrl: string;
   audioFileName: string;
-  character1Url: string;
-  character2Url: string;
+  benchImageUrl: string;
   bouquetImageUrl: string;
   treasuresImageUrl: string;
 }
@@ -36,8 +35,7 @@ const DEFAULT_CONTENT: AnnivContent = {
   })),
   audioDataUrl: "",
   audioFileName: "",
-  character1Url: "",
-  character2Url: "",
+  benchImageUrl: "",
   bouquetImageUrl: "",
   treasuresImageUrl: "",
 };
@@ -45,8 +43,8 @@ const DEFAULT_CONTENT: AnnivContent = {
 /**
  * Image slot mapping:
  * uploadedImages[0]       = board game image
- * uploadedImages[1]       = bench character 1
- * uploadedImages[2]       = bench character 2
+ * uploadedImages[1]       = bench image (single photo of both characters)
+ * uploadedImages[2]       = (unused — kept for slot alignment)
  * uploadedImages[3..22]   = polaroids 0-19
  * uploadedImages[23]      = bouquet image
  * uploadedImages[24]      = little treasures image
@@ -64,11 +62,7 @@ export function useAnnivContent() {
     bytes: Uint8Array<ArrayBuffer>;
     fileName: string;
   } | null>(null);
-  const pendingCharacter1Ref = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
-    fileName: string;
-  } | null>(null);
-  const pendingCharacter2Ref = useRef<{
+  const pendingBenchImageRef = useRef<{
     bytes: Uint8Array<ArrayBuffer>;
     fileName: string;
   } | null>(null);
@@ -112,8 +106,7 @@ export function useAnnivContent() {
         const imgs = backendContent.uploadedImages ?? [];
 
         const boardGameImageUrl = imgs[0] ? imgs[0].getDirectURL() : "";
-        const character1Url = imgs[1] ? imgs[1].getDirectURL() : "";
-        const character2Url = imgs[2] ? imgs[2].getDirectURL() : "";
+        const benchImageUrl = imgs[1] ? imgs[1].getDirectURL() : "";
 
         // polaroids: slots 3..22
         const polaroids: PolaroidItem[] = Array.from(
@@ -152,8 +145,7 @@ export function useAnnivContent() {
             polaroids,
             audioDataUrl,
             audioFileName,
-            character1Url,
-            character2Url,
+            benchImageUrl,
             bouquetImageUrl,
             treasuresImageUrl,
           });
@@ -192,22 +184,13 @@ export function useAnnivContent() {
     setContent((prev) => ({ ...prev, boardGameImageUrl: previewUrl }));
   }
 
-  function uploadCharacter1(
+  function uploadBenchImage(
     bytes: Uint8Array<ArrayBuffer>,
     fileName: string,
     previewUrl: string,
   ) {
-    pendingCharacter1Ref.current = { bytes, fileName };
-    setContent((prev) => ({ ...prev, character1Url: previewUrl }));
-  }
-
-  function uploadCharacter2(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
-    previewUrl: string,
-  ) {
-    pendingCharacter2Ref.current = { bytes, fileName };
-    setContent((prev) => ({ ...prev, character2Url: previewUrl }));
+    pendingBenchImageRef.current = { bytes, fileName };
+    setContent((prev) => ({ ...prev, benchImageUrl: previewUrl }));
   }
 
   function uploadPolaroid(
@@ -323,26 +306,15 @@ export function useAnnivContent() {
       pendingBoardGameRef.current = null;
     }
 
-    // Slot 1: character 1
-    if (pendingCharacter1Ref.current) {
-      await ensureSlotAndUpload(1, pendingCharacter1Ref.current.bytes);
+    // Slot 1: bench image
+    if (pendingBenchImageRef.current) {
+      await ensureSlotAndUpload(1, pendingBenchImageRef.current.bytes);
       if (uploadedImages[1])
         setContent((prev) => ({
           ...prev,
-          character1Url: uploadedImages[1].getDirectURL(),
+          benchImageUrl: uploadedImages[1].getDirectURL(),
         }));
-      pendingCharacter1Ref.current = null;
-    }
-
-    // Slot 2: character 2
-    if (pendingCharacter2Ref.current) {
-      await ensureSlotAndUpload(2, pendingCharacter2Ref.current.bytes);
-      if (uploadedImages[2])
-        setContent((prev) => ({
-          ...prev,
-          character2Url: uploadedImages[2].getDirectURL(),
-        }));
-      pendingCharacter2Ref.current = null;
+      pendingBenchImageRef.current = null;
     }
 
     // Slots 3-22: polaroids 0-19
@@ -412,8 +384,7 @@ export function useAnnivContent() {
     setPoems,
     setPoemAt,
     uploadBoardGame,
-    uploadCharacter1,
-    uploadCharacter2,
+    uploadBenchImage,
     uploadPolaroid,
     updatePolaroidCaption,
     uploadBouquet,

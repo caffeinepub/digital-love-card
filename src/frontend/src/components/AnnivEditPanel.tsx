@@ -27,12 +27,7 @@ interface AnnivEditPanelProps {
     fileName: string,
     previewUrl: string,
   ) => void;
-  onUploadCharacter1: (
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
-    previewUrl: string,
-  ) => void;
-  onUploadCharacter2: (
+  onUploadBenchImage: (
     bytes: Uint8Array<ArrayBuffer>,
     fileName: string,
     previewUrl: string,
@@ -57,8 +52,7 @@ interface AnnivEditPanelProps {
     previewUrl: string,
   ) => void;
   clearAudio: () => void;
-  character1Url: string;
-  character2Url: string;
+  benchImageUrl: string;
   bouquetImageUrl: string;
   treasuresImageUrl: string;
   onUploadTreasures: (
@@ -107,8 +101,7 @@ export default function AnnivEditPanel({
   boardGameImageUrl,
   polaroids,
   onUploadBoardGame,
-  onUploadCharacter1,
-  onUploadCharacter2,
+  onUploadBenchImage,
   onUploadPolaroid,
   onUpdatePolaroidCaption,
   onUploadBouquet,
@@ -116,8 +109,7 @@ export default function AnnivEditPanel({
   audioFileName,
   setAudio,
   clearAudio,
-  character1Url,
-  character2Url,
+  benchImageUrl,
   bouquetImageUrl,
   treasuresImageUrl,
   onUploadTreasures,
@@ -128,8 +120,7 @@ export default function AnnivEditPanel({
   const [audioUploading, setAudioUploading] = useState(false);
 
   const boardGameInputRef = React.useRef<HTMLInputElement>(null);
-  const character1InputRef = React.useRef<HTMLInputElement>(null);
-  const character2InputRef = React.useRef<HTMLInputElement>(null);
+  const benchImageInputRef = React.useRef<HTMLInputElement>(null);
   const audioInputRef = React.useRef<HTMLInputElement>(null);
   const bouquetInputRef = React.useRef<HTMLInputElement>(null);
   const treasuresInputRef = React.useRef<HTMLInputElement>(null);
@@ -355,19 +346,16 @@ export default function AnnivEditPanel({
               </button>
             </div>
 
-            {/* Tabs — horizontally scrollable so all 6 tabs are always accessible */}
+            {/* Tabs — 2-row grid so all 6 are always visible */}
             <div
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 borderBottom: "1px solid rgba(111,191,115,0.15)",
                 position: "sticky",
                 top: "65px",
                 background: "rgba(247,255,248,0.98)",
                 zIndex: 2,
-                overflowX: "auto",
-                WebkitOverflowScrolling: "touch" as unknown as undefined,
-                scrollbarWidth: "none" as unknown as undefined,
-                msOverflowStyle: "none" as unknown as undefined,
               }}
             >
               {TAB_LABELS.map((tab) => (
@@ -377,23 +365,24 @@ export default function AnnivEditPanel({
                   data-ocid={`edit.${tab.id}.tab`}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: "8px 8px",
+                    padding: "10px 4px",
                     border: "none",
-                    background: "transparent",
+                    background:
+                      activeTab === tab.id
+                        ? "rgba(111,191,115,0.15)"
+                        : "transparent",
                     fontFamily: "'Lora', Georgia, serif",
-                    fontSize: "0.7rem",
-                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    fontSize: "0.78rem",
+                    fontWeight: activeTab === tab.id ? 700 : 400,
                     color: activeTab === tab.id ? "#3a5a40" : "#7a9e7e",
                     cursor: "pointer",
                     borderBottom:
                       activeTab === tab.id
                         ? "2px solid #6fbf73"
                         : "2px solid transparent",
-                    transition: "color 0.15s ease",
+                    transition: "all 0.15s ease",
                     whiteSpace: "nowrap",
-                    marginBottom: "-1px",
-                    flexShrink: 0,
-                    minWidth: 0,
+                    textAlign: "center",
                   }}
                 >
                   {tab.label}
@@ -614,101 +603,54 @@ export default function AnnivEditPanel({
                       lineHeight: 1.6,
                     }}
                   >
-                    Upload PNG images of your two characters to sit on the bench
-                    together. PNGs with transparent backgrounds work best ✨
+                    Upload a photo of you two on the bench
                   </p>
 
-                  {/* Character 1 */}
-                  <div>
-                    <p
-                      style={{
-                        fontFamily: "'Lora', Georgia, serif",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        color: "#3a5a40",
-                        margin: "0 0 8px 0",
-                      }}
-                    >
-                      Character 1 (left side)
-                    </p>
-                    <input
-                      ref={character1InputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, onUploadCharacter1)}
-                      style={{ display: "none" }}
-                    />
-                    <button
-                      type="button"
-                      data-ocid="edit.character1.upload_button"
-                      onClick={() => character1InputRef.current?.click()}
-                      style={uploadButtonStyle}
-                    >
-                      {character1Url ? (
-                        <>
-                          <img
-                            src={character1Url}
-                            alt=""
-                            style={{
-                              width: "48px",
-                              height: "48px",
-                              objectFit: "contain",
-                              borderRadius: "6px",
-                            }}
-                          />
-                          Replace character 1
-                        </>
-                      ) : (
-                        <>🧑 Upload character 1</>
-                      )}
-                    </button>
-                  </div>
+                  <p
+                    style={{
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.72rem",
+                      color: "#7a9e7e",
+                      margin: "-12px 0 0",
+                      fontStyle: "italic",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Upload a photo with both of you — it'll be displayed large
+                    and centred on the bench scene ✨
+                  </p>
 
-                  {/* Character 2 */}
-                  <div>
-                    <p
-                      style={{
-                        fontFamily: "'Lora', Georgia, serif",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        color: "#3a5a40",
-                        margin: "0 0 8px 0",
-                      }}
-                    >
-                      Character 2 (right side)
-                    </p>
-                    <input
-                      ref={character2InputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, onUploadCharacter2)}
-                      style={{ display: "none" }}
-                    />
-                    <button
-                      type="button"
-                      data-ocid="edit.character2.upload_button"
-                      onClick={() => character2InputRef.current?.click()}
-                      style={uploadButtonStyle}
-                    >
-                      {character2Url ? (
-                        <>
-                          <img
-                            src={character2Url}
-                            alt=""
-                            style={{
-                              width: "48px",
-                              height: "48px",
-                              objectFit: "contain",
-                              borderRadius: "6px",
-                            }}
-                          />
-                          Replace character 2
-                        </>
-                      ) : (
-                        <>🧑 Upload character 2</>
-                      )}
-                    </button>
-                  </div>
+                  <input
+                    ref={benchImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, onUploadBenchImage)}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    data-ocid="edit.bench.upload_button"
+                    onClick={() => benchImageInputRef.current?.click()}
+                    style={{ ...uploadButtonStyle, padding: "16px" }}
+                  >
+                    {benchImageUrl ? (
+                      <>
+                        <img
+                          src={benchImageUrl}
+                          alt="Current bench"
+                          style={{
+                            width: "72px",
+                            height: "56px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        Replace bench photo
+                      </>
+                    ) : (
+                      <>🪑 Upload bench photo</>
+                    )}
+                  </button>
 
                   <p
                     style={{
@@ -720,7 +662,7 @@ export default function AnnivEditPanel({
                       lineHeight: 1.5,
                     }}
                   >
-                    After uploading, tap Save changes so they appear when others
+                    After uploading, tap Save changes so it appears when others
                     view the page.
                   </p>
                 </div>
