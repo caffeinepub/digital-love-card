@@ -47,31 +47,43 @@ export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
           every small thing I keep because of you 🧶
         </p>
 
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          transition={{ type: "spring", damping: 22 }}
+        {/* Outer wrapper constrains the max width */}
+        <div
           style={{
             display: "inline-block",
             width: "100%",
             maxWidth: "860px",
-            aspectRatio: "1 / 1",
-            borderRadius: "24px",
-            overflow: "hidden",
-            boxShadow:
-              "0 12px 40px rgba(63,90,58,0.18), 0 2px 8px rgba(0,0,0,0.06)",
           }}
         >
-          <img
-            src={imageSrc}
-            alt="Flatlay of keepsake items including bracelets, plushies, candle, heart with sathu, cactus jack plate, and crocheted sunflower"
+          {/* Padding-bottom trick forces a perfect 1:1 square */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: "spring", damping: 22 }}
             style={{
+              position: "relative",
               width: "100%",
-              height: "100%",
-              display: "block",
-              objectFit: "cover",
+              paddingBottom: "100%" /* makes height === width */,
+              borderRadius: "24px",
+              overflow: "hidden",
+              boxShadow:
+                "0 12px 40px rgba(63,90,58,0.18), 0 2px 8px rgba(0,0,0,0.06)",
             }}
-          />
-        </motion.div>
+          >
+            <img
+              src={imageSrc}
+              alt="Flatlay of keepsake items including bracelets, plushies, candle, heart with sathu, cactus jack plate, and crocheted sunflower"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: "block",
+                objectFit: "cover",
+              }}
+            />
+          </motion.div>
+        </div>
       </motion.div>
     </section>
   );

@@ -121,7 +121,7 @@ export default function GameSection({
             onClick={() => boardGameInputRef.current?.click()}
             style={{
               width: "100%",
-              aspectRatio: "4/3",
+              aspectRatio: "1/1",
               borderRadius: "24px",
               border: boardGameImageUrl
                 ? "none"
