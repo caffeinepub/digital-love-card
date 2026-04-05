@@ -1,10 +1,17 @@
 import { motion } from "motion/react";
+import { DEFAULT_SUBTEXTS } from "../hooks/useAnnivContent";
 
 interface MemoryBedProps {
   treasuresImageUrl?: string;
+  heading?: string;
+  subtext?: string;
 }
 
-export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
+export default function MemoryBed({
+  treasuresImageUrl,
+  heading = DEFAULT_SUBTEXTS.treasuresHeading,
+  subtext = DEFAULT_SUBTEXTS.treasuresSubtext,
+}: MemoryBedProps) {
   const imageSrc =
     treasuresImageUrl ||
     "/assets/generated/little-treasures-flatlay.dim_900x700.jpg";
@@ -33,7 +40,7 @@ export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
             margin: "0 0 8px 0",
           }}
         >
-          little treasures
+          {heading}
         </h2>
         <p
           style={{
@@ -44,7 +51,7 @@ export default function MemoryBed({ treasuresImageUrl }: MemoryBedProps) {
             margin: "0 0 28px 0",
           }}
         >
-          every small thing I keep because of you 🧶
+          {subtext}
         </p>
 
         {/* Outer wrapper constrains the max width */}

@@ -9,6 +9,31 @@ export interface PolaroidItem {
   rotation: number;
 }
 
+export interface SubtextContent {
+  // Bouquet section
+  bouquetHeading: string;
+  bouquetSubtext: string;
+  // Bench section
+  benchCaption: string;
+  // Treasures section
+  treasuresHeading: string;
+  treasuresSubtext: string;
+  // Game section
+  gameHeading: string;
+  // Timer section
+  timerSubtext: string;
+}
+
+export const DEFAULT_SUBTEXTS: SubtextContent = {
+  bouquetHeading: "a bouquet, just for you",
+  bouquetSubtext: "tap to discover what each flower means",
+  benchCaption: "us, always",
+  treasuresHeading: "little treasures",
+  treasuresSubtext: "every small thing I keep because of you 🧶",
+  gameHeading: "roll the dice of love",
+  timerSubtext: "we've been us for...",
+};
+
 export interface AnnivContent {
   poems: string[]; // 6 poems for dice rolls
   boardGameImageUrl: string;
@@ -18,6 +43,7 @@ export interface AnnivContent {
   benchImageUrl: string;
   bouquetImageUrl: string;
   treasuresImageUrl: string;
+  subtexts: SubtextContent;
 }
 
 const TOTAL_POLAROIDS = 20;
@@ -38,6 +64,7 @@ const DEFAULT_CONTENT: AnnivContent = {
   benchImageUrl: "",
   bouquetImageUrl: "",
   treasuresImageUrl: "",
+  subtexts: { ...DEFAULT_SUBTEXTS },
 };
 
 /**
@@ -88,6 +115,8 @@ export function useAnnivContent() {
         const backendContent = await actor.getContent();
 
         let poems = [...DEFAULT_POEMS];
+        let subtexts = { ...DEFAULT_SUBTEXTS };
+
         if (backendContent.letterText) {
           try {
             const parsed = JSON.parse(backendContent.letterText);
@@ -97,6 +126,9 @@ export function useAnnivContent() {
               parsed.poems.length === 6
             ) {
               poems = parsed.poems;
+            }
+            if (parsed.subtexts) {
+              subtexts = { ...DEFAULT_SUBTEXTS, ...parsed.subtexts };
             }
           } catch {
             /* ignore */
@@ -148,6 +180,7 @@ export function useAnnivContent() {
             benchImageUrl,
             bouquetImageUrl,
             treasuresImageUrl,
+            subtexts,
           });
         }
       } catch {
@@ -173,6 +206,13 @@ export function useAnnivContent() {
       updated[index] = value;
       return { ...prev, poems: updated };
     });
+  }
+
+  function setSubtext(key: keyof SubtextContent, value: string) {
+    setContent((prev) => ({
+      ...prev,
+      subtexts: { ...prev.subtexts, [key]: value },
+    }));
   }
 
   function uploadBoardGame(
@@ -358,7 +398,10 @@ export function useAnnivContent() {
       pendingTreasuresRef.current = null;
     }
 
-    const poemsJson = JSON.stringify({ poems: content.poems });
+    const poemsJson = JSON.stringify({
+      poems: content.poems,
+      subtexts: content.subtexts,
+    });
 
     await actor.saveContent({
       letterText: poemsJson,
@@ -383,6 +426,7 @@ export function useAnnivContent() {
     isLoading,
     setPoems,
     setPoemAt,
+    setSubtext,
     uploadBoardGame,
     uploadBenchImage,
     uploadPolaroid,

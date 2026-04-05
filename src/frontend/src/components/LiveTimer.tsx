@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { DEFAULT_SUBTEXTS } from "../hooks/useAnnivContent";
 
 const START_DATE = new Date("2025-04-08T00:00:00");
 
@@ -52,7 +53,13 @@ const UNITS: { key: keyof TimeUnits; label: string; emoji: string }[] = [
   { key: "seconds", label: "Seconds", emoji: "✨" },
 ];
 
-export default function LiveTimer() {
+interface LiveTimerProps {
+  subtext?: string;
+}
+
+export default function LiveTimer({
+  subtext = DEFAULT_SUBTEXTS.timerSubtext,
+}: LiveTimerProps) {
   const [time, setTime] = useState<TimeUnits>(() => calcTimeSince(START_DATE));
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -89,7 +96,7 @@ export default function LiveTimer() {
           letterSpacing: "0.02em",
         }}
       >
-        we've been us for...
+        {subtext}
       </motion.p>
 
       {/* Top row: Years, Months, Weeks, Days */}

@@ -1,5 +1,9 @@
 import { AnimatePresence, motion } from "motion/react";
 import React, { useState } from "react";
+import {
+  DEFAULT_SUBTEXTS,
+  type SubtextContent,
+} from "../hooks/useAnnivContent";
 import { DEFAULT_POEMS } from "./GameSection";
 
 const POEM_SLOTS = [
@@ -60,6 +64,8 @@ interface AnnivEditPanelProps {
     fileName: string,
     previewUrl: string,
   ) => void;
+  subtexts: SubtextContent;
+  onSubtextChange: (key: keyof SubtextContent, value: string) => void;
 }
 
 type TabId = "poems" | "bouquet" | "treasures" | "bench" | "photos" | "music";
@@ -113,6 +119,8 @@ export default function AnnivEditPanel({
   bouquetImageUrl,
   treasuresImageUrl,
   onUploadTreasures,
+  subtexts,
+  onSubtextChange,
 }: AnnivEditPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("poems");
@@ -132,6 +140,7 @@ export default function AnnivEditPanel({
   );
 
   const currentPoems = poems.length === 6 ? poems : [...DEFAULT_POEMS];
+  const st = subtexts ?? DEFAULT_SUBTEXTS;
 
   function updatePoem(index: number, value: string) {
     const updated = [...currentPoems];
@@ -253,6 +262,16 @@ export default function AnnivEditPanel({
     justifyContent: "center",
     transition: "background 0.15s ease",
   };
+
+  const sectionDivider = (
+    <div
+      style={{
+        height: "1px",
+        background: "rgba(111,191,115,0.2)",
+        margin: "4px 0 8px",
+      }}
+    />
+  );
 
   return (
     <>
@@ -400,7 +419,7 @@ export default function AnnivEditPanel({
                 gap: "20px",
               }}
             >
-              {/* Poems Tab */}
+              {/* ---- Poems Tab ---- */}
               {activeTab === "poems" && (
                 <div
                   style={{
@@ -409,6 +428,25 @@ export default function AnnivEditPanel({
                     gap: "16px",
                   }}
                 >
+                  {/* Timer subtext */}
+                  <div>
+                    <label style={labelStyle} htmlFor="timer-subtext-input">
+                      Timer caption
+                    </label>
+                    <input
+                      id="timer-subtext-input"
+                      type="text"
+                      value={st.timerSubtext}
+                      onChange={(e) =>
+                        onSubtextChange("timerSubtext", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.timerSubtext}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+
+                  {sectionDivider}
+
                   <p
                     style={{
                       fontFamily: "'Lora', Georgia, serif",
@@ -443,15 +481,49 @@ export default function AnnivEditPanel({
                 </div>
               )}
 
-              {/* Bouquet Tab */}
+              {/* ---- Bouquet Tab ---- */}
               {activeTab === "bouquet" && (
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "20px",
+                    gap: "16px",
                   }}
                 >
+                  {/* Subtext fields */}
+                  <div>
+                    <label style={labelStyle} htmlFor="bouquet-heading-input">
+                      Section heading
+                    </label>
+                    <input
+                      id="bouquet-heading-input"
+                      type="text"
+                      value={st.bouquetHeading}
+                      onChange={(e) =>
+                        onSubtextChange("bouquetHeading", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.bouquetHeading}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="bouquet-subtext-input">
+                      Subtitle
+                    </label>
+                    <input
+                      id="bouquet-subtext-input"
+                      type="text"
+                      value={st.bouquetSubtext}
+                      onChange={(e) =>
+                        onSubtextChange("bouquetSubtext", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.bouquetSubtext}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+
+                  {sectionDivider}
+
                   <p
                     style={{
                       fontFamily: "'Lora', Georgia, serif",
@@ -514,15 +586,49 @@ export default function AnnivEditPanel({
                 </div>
               )}
 
-              {/* Treasures Tab */}
+              {/* ---- Treasures Tab ---- */}
               {activeTab === "treasures" && (
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "20px",
+                    gap: "16px",
                   }}
                 >
+                  {/* Subtext fields */}
+                  <div>
+                    <label style={labelStyle} htmlFor="treasures-heading-input">
+                      Section heading
+                    </label>
+                    <input
+                      id="treasures-heading-input"
+                      type="text"
+                      value={st.treasuresHeading}
+                      onChange={(e) =>
+                        onSubtextChange("treasuresHeading", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.treasuresHeading}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle} htmlFor="treasures-subtext-input">
+                      Subtitle
+                    </label>
+                    <input
+                      id="treasures-subtext-input"
+                      type="text"
+                      value={st.treasuresSubtext}
+                      onChange={(e) =>
+                        onSubtextChange("treasuresSubtext", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.treasuresSubtext}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+
+                  {sectionDivider}
+
                   <p
                     style={{
                       fontFamily: "'Lora', Georgia, serif",
@@ -584,15 +690,34 @@ export default function AnnivEditPanel({
                 </div>
               )}
 
-              {/* Bench Tab */}
+              {/* ---- Bench Tab ---- */}
               {activeTab === "bench" && (
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "20px",
+                    gap: "16px",
                   }}
                 >
+                  {/* Bench caption */}
+                  <div>
+                    <label style={labelStyle} htmlFor="bench-caption-input">
+                      Bench caption
+                    </label>
+                    <input
+                      id="bench-caption-input"
+                      type="text"
+                      value={st.benchCaption}
+                      onChange={(e) =>
+                        onSubtextChange("benchCaption", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.benchCaption}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+
+                  {sectionDivider}
+
                   <p
                     style={{
                       fontFamily: "'Lora', Georgia, serif",
@@ -611,12 +736,12 @@ export default function AnnivEditPanel({
                       fontFamily: "'Lora', Georgia, serif",
                       fontSize: "0.72rem",
                       color: "#7a9e7e",
-                      margin: "-12px 0 0",
+                      margin: "-8px 0 0",
                       fontStyle: "italic",
                       lineHeight: 1.5,
                     }}
                   >
-                    Upload a photo with both of you — it'll be displayed large
+                    Upload a photo with both of you — it’ll be displayed large
                     and centred on the bench scene ✨
                   </p>
 
@@ -668,7 +793,7 @@ export default function AnnivEditPanel({
                 </div>
               )}
 
-              {/* Photos Tab */}
+              {/* ---- Photos Tab ---- */}
               {activeTab === "photos" && (
                 <div
                   style={{
@@ -677,6 +802,25 @@ export default function AnnivEditPanel({
                     gap: "20px",
                   }}
                 >
+                  {/* Game heading */}
+                  <div>
+                    <label style={labelStyle} htmlFor="game-heading-input">
+                      Game section heading
+                    </label>
+                    <input
+                      id="game-heading-input"
+                      type="text"
+                      value={st.gameHeading}
+                      onChange={(e) =>
+                        onSubtextChange("gameHeading", e.target.value)
+                      }
+                      placeholder={DEFAULT_SUBTEXTS.gameHeading}
+                      style={{ ...inputStyle, resize: "none" }}
+                    />
+                  </div>
+
+                  {sectionDivider}
+
                   {/* Board game photo */}
                   <div>
                     <p
@@ -836,7 +980,7 @@ export default function AnnivEditPanel({
                 </div>
               )}
 
-              {/* Music Tab */}
+              {/* ---- Music Tab ---- */}
               {activeTab === "music" && (
                 <div
                   style={{

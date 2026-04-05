@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState } from "react";
+import { DEFAULT_SUBTEXTS } from "../hooks/useAnnivContent";
 
 const DEFAULT_POEMS: string[] = [
   "In the ordinary days,\nyou made magic feel mundane—\nso woven into my world\nthat I forget to count\nhow lucky I am.\nThen I remember. Always.",
@@ -24,12 +25,14 @@ interface GameSectionProps {
   ) => void;
   poems: string[];
   onPoemsChange: (poems: string[]) => void;
+  heading?: string;
 }
 
 export default function GameSection({
   boardGameImageUrl,
   onUploadBoardGame,
   poems,
+  heading = DEFAULT_SUBTEXTS.gameHeading,
 }: GameSectionProps) {
   const [rolling, setRolling] = useState(false);
   const [diceResult, setDiceResult] = useState<number | null>(null);
@@ -89,7 +92,7 @@ export default function GameSection({
           margin: "0 0 32px 0",
         }}
       >
-        roll the dice of love
+        {heading}
       </motion.h2>
 
       <div
@@ -395,12 +398,6 @@ const FACE_ADJACENCY: Record<number, [number, number]> = {
 
 // ---------------------------------------------------------------------------
 // TOP FACE dot positions (isometric rhombus)
-// Face vertices: top=(100,20), right=(170,58), bottom=(100,96), left=(30,58)
-// Center: (100,58), half-width=70, half-height=38
-// Isometric grid axes: right=(+35,+19), left=(-35,+19)
-// We use a 3-col x 2-row grid with:
-//   col step along right-diagonal: col * (23, 12)
-//   row step (up/down in face):    row * (-4, 14)
 function getTopDots(count: number): Array<[number, number]> {
   const cx = 100;
   const cy = 58;
@@ -419,7 +416,6 @@ function getTopDots(count: number): Array<[number, number]> {
   const BC = gp(0, 1);
   const BR = gp(1, 1);
 
-  // Keep TS/BS unused warning suppressed
   void ML;
   void MR;
   void BC;
@@ -443,9 +439,6 @@ function getTopDots(count: number): Array<[number, number]> {
 }
 
 // RIGHT FACE dot positions (parallelogram)
-// Vertices: (170,58)-(170,138)-(100,176)-(100,96)
-// Center: (135,117)
-// Axis: right col = (+17,-8), down row = (-4,+24)
 function getRightDots(count: number): Array<[number, number]> {
   const cx = 135;
   const cy = 117;
@@ -481,9 +474,6 @@ function getRightDots(count: number): Array<[number, number]> {
 }
 
 // LEFT FACE dot positions (parallelogram)
-// Vertices: (30,58)-(100,96)-(100,176)-(30,138)
-// Center: (65,117)
-// Axis: right col = (+17,+8), down row = (+4,+24)
 function getLeftDots(count: number): Array<[number, number]> {
   const cx = 65;
   const cy = 117;

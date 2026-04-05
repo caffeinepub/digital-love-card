@@ -23,6 +23,7 @@ export default function App() {
   const {
     content,
     setPoems,
+    setSubtext,
     uploadBoardGame,
     uploadBenchImage,
     uploadPolaroid,
@@ -99,17 +100,29 @@ export default function App() {
           />
         </header>
 
-        <LiveTimer />
-        <BouquetSection bouquetImageUrl={content.bouquetImageUrl} />
+        <LiveTimer subtext={content.subtexts.timerSubtext} />
+        <BouquetSection
+          bouquetImageUrl={content.bouquetImageUrl}
+          heading={content.subtexts.bouquetHeading}
+          subtext={content.subtexts.bouquetSubtext}
+        />
         <FenceDivider />
         <GameSection
           boardGameImageUrl={content.boardGameImageUrl}
           onUploadBoardGame={uploadBoardGame}
           poems={content.poems}
           onPoemsChange={setPoems}
+          heading={content.subtexts.gameHeading}
         />
-        <BenchScene benchImageUrl={content.benchImageUrl} />
-        <MemoryBed treasuresImageUrl={content.treasuresImageUrl} />
+        <BenchScene
+          benchImageUrl={content.benchImageUrl}
+          caption={content.subtexts.benchCaption}
+        />
+        <MemoryBed
+          treasuresImageUrl={content.treasuresImageUrl}
+          heading={content.subtexts.treasuresHeading}
+          subtext={content.subtexts.treasuresSubtext}
+        />
         <OrnamDivider />
         <PolaroidGallery2
           polaroids={content.polaroids}
@@ -197,6 +210,8 @@ export default function App() {
         clearAudio={clearAudio}
         benchImageUrl={content.benchImageUrl}
         bouquetImageUrl={content.bouquetImageUrl}
+        subtexts={content.subtexts}
+        onSubtextChange={setSubtext}
       />
     </>
   );

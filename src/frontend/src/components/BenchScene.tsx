@@ -1,10 +1,15 @@
 import { motion } from "motion/react";
+import { DEFAULT_SUBTEXTS } from "../hooks/useAnnivContent";
 
 interface BenchSceneProps {
   benchImageUrl?: string;
+  caption?: string;
 }
 
-export default function BenchScene({ benchImageUrl }: BenchSceneProps) {
+export default function BenchScene({
+  benchImageUrl,
+  caption = DEFAULT_SUBTEXTS.benchCaption,
+}: BenchSceneProps) {
   return (
     <section
       data-ocid="bench.section"
@@ -29,7 +34,7 @@ export default function BenchScene({ benchImageUrl }: BenchSceneProps) {
             margin: "0 0 28px 0",
           }}
         >
-          us, always
+          {caption}
         </p>
 
         {benchImageUrl ? (

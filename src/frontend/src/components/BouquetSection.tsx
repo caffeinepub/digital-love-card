@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { DEFAULT_SUBTEXTS } from "../hooks/useAnnivContent";
 
 const FLOWER_MEANINGS = [
   {
@@ -57,10 +58,14 @@ const BOUQUET_IMG = "/assets/bouquet-user.png";
 
 interface BouquetSectionProps {
   bouquetImageUrl?: string;
+  heading?: string;
+  subtext?: string;
 }
 
 export default function BouquetSection({
   bouquetImageUrl,
+  heading = DEFAULT_SUBTEXTS.bouquetHeading,
+  subtext = DEFAULT_SUBTEXTS.bouquetSubtext,
 }: BouquetSectionProps) {
   const [open, setOpen] = useState(false);
 
@@ -100,7 +105,7 @@ export default function BouquetSection({
             margin: "0 0 6px 0",
           }}
         >
-          a bouquet, just for you
+          {heading}
         </h2>
         <p
           style={{
@@ -111,14 +116,9 @@ export default function BouquetSection({
             margin: "0 0 8px 0",
           }}
         >
-          tap to discover what each flower means
+          {subtext}
         </p>
 
-        {/*
-          Increased size: min(820px, 98vw) for a bigger bouquet display.
-          Large generous padding so the drop-shadow is never clipped.
-          overflow: visible on all wrappers ensures nothing cuts the image.
-        */}
         <motion.div
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.98 }}
