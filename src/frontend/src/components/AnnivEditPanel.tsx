@@ -79,8 +79,8 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: "music", label: "Music" },
 ];
 
-const UNLOCK_TAPS = 5;
-const TAP_WINDOW_MS = 3000;
+export const UNLOCK_TAPS = 5;
+export const TAP_WINDOW_MS = 3000;
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -318,7 +318,7 @@ export default function AnnivEditPanel({
                 position: "sticky",
                 top: 0,
                 background: "rgba(247,255,248,0.98)",
-                zIndex: 1,
+                zIndex: 2,
               }}
             >
               <h2
@@ -355,17 +355,19 @@ export default function AnnivEditPanel({
               </button>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs — horizontally scrollable so all 6 tabs are always accessible */}
             <div
               style={{
                 display: "flex",
                 borderBottom: "1px solid rgba(111,191,115,0.15)",
-                padding: "0 12px",
                 position: "sticky",
                 top: "65px",
                 background: "rgba(247,255,248,0.98)",
-                zIndex: 1,
+                zIndex: 2,
                 overflowX: "auto",
+                WebkitOverflowScrolling: "touch" as unknown as undefined,
+                scrollbarWidth: "none" as unknown as undefined,
+                msOverflowStyle: "none" as unknown as undefined,
               }}
             >
               {TAB_LABELS.map((tab) => (
@@ -375,11 +377,11 @@ export default function AnnivEditPanel({
                   data-ocid={`edit.${tab.id}.tab`}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: "10px 12px",
+                    padding: "8px 8px",
                     border: "none",
                     background: "transparent",
                     fontFamily: "'Lora', Georgia, serif",
-                    fontSize: "0.78rem",
+                    fontSize: "0.7rem",
                     fontWeight: activeTab === tab.id ? 600 : 400,
                     color: activeTab === tab.id ? "#3a5a40" : "#7a9e7e",
                     cursor: "pointer",
@@ -391,6 +393,7 @@ export default function AnnivEditPanel({
                     whiteSpace: "nowrap",
                     marginBottom: "-1px",
                     flexShrink: 0,
+                    minWidth: 0,
                   }}
                 >
                   {tab.label}
@@ -987,7 +990,7 @@ export default function AnnivEditPanel({
                 position: "sticky",
                 bottom: 0,
                 background: "rgba(247,255,248,0.98)",
-                zIndex: 1,
+                zIndex: 2,
               }}
             >
               <button
@@ -1058,5 +1061,3 @@ export default function AnnivEditPanel({
     </>
   );
 }
-
-export { UNLOCK_TAPS, TAP_WINDOW_MS };

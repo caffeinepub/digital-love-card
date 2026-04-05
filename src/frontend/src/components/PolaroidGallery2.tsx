@@ -79,6 +79,9 @@ const PLACEHOLDER_COLORS = [
   "#d0ecda",
 ];
 
+// Responsive card size using clamp
+const CARD_SIZE = "clamp(80px, 18vw, 130px)";
+
 function PolaroidCard({
   src,
   caption,
@@ -141,10 +144,11 @@ function PolaroidCard({
             aria-label={`Upload polaroid ${index + 1}`}
           />
         )}
+        {/* Photo area — responsive clamp size */}
         <div
           style={{
-            width: "130px",
-            height: "130px",
+            width: CARD_SIZE,
+            height: CARD_SIZE,
             background: src
               ? undefined
               : PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length],
@@ -194,8 +198,10 @@ function PolaroidCard({
             </div>
           )}
         </div>
+        {/* Caption — matches photo width */}
         <div
           style={{
+            width: CARD_SIZE,
             paddingTop: "6px",
             fontFamily: "'Great Vibes', cursive",
             fontSize: "0.85rem",
@@ -230,6 +236,20 @@ const ROW2_SLOTS = [
 
 const DEFAULT_ROT1 = [-4, 3, -2, 5, -3];
 const DEFAULT_ROT2 = [3, -5, 2, -3, 4];
+
+// Shared row scroll style — hidden scrollbar, padded edges
+const rowScrollStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "clamp(6px, 2vw, 18px)",
+  flexWrap: "nowrap",
+  overflowX: "auto",
+  paddingBottom: "4px",
+  paddingLeft: "8px",
+  paddingRight: "8px",
+  scrollbarWidth: "none",
+  msOverflowStyle: "none",
+};
 
 export default function PolaroidGallery2({
   polaroids,
@@ -287,16 +307,7 @@ export default function PolaroidGallery2({
           <FairyLights />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "clamp(6px, 2vw, 18px)",
-            flexWrap: "nowrap",
-            overflowX: "auto",
-            paddingBottom: "4px",
-          }}
-        >
+        <div style={rowScrollStyle}>
           {ROW1_SLOTS.map((slot) => {
             const p = polaroids[slot.pos] ?? {
               src: "",
@@ -344,16 +355,7 @@ export default function PolaroidGallery2({
           <FairyLights />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "clamp(6px, 2vw, 18px)",
-            flexWrap: "nowrap",
-            overflowX: "auto",
-            paddingBottom: "4px",
-          }}
-        >
+        <div style={rowScrollStyle}>
           {ROW2_SLOTS.map((slot) => {
             const p = polaroids[slot.globalIndex] ?? {
               src: "",
