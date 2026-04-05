@@ -53,7 +53,7 @@ const FLOWER_MEANINGS = [
 ];
 
 const BOUQUET_IMG =
-  "/assets/generated/bouquet-watercolor-sathwik-transparent.dim_600x750.png";
+  "/assets/generated/bouquet-watercolor-v2-transparent.dim_500x650.png";
 
 interface BouquetSectionProps {
   bouquetImageUrl?: string;
@@ -64,7 +64,6 @@ export default function BouquetSection({
 }: BouquetSectionProps) {
   const [open, setOpen] = useState(false);
 
-  // Always use the watercolor image; user-uploaded replaces it
   const imageSrc = bouquetImageUrl || BOUQUET_IMG;
 
   return (
@@ -73,8 +72,10 @@ export default function BouquetSection({
       style={{
         position: "relative",
         zIndex: 1,
-        padding: "40px 20px 48px",
+        padding: "40px 20px 56px",
         textAlign: "center",
+        width: "100%",
+        overflow: "visible",
       }}
     >
       <motion.div
@@ -82,7 +83,13 @@ export default function BouquetSection({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.8 }}
-        style={{ display: "inline-block", position: "relative" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: "100%",
+          overflow: "visible",
+        }}
       >
         {/* Heading */}
         <h2
@@ -107,18 +114,18 @@ export default function BouquetSection({
           tap to discover what each flower means
         </p>
 
-        {/* Bouquet image */}
+        {/* Bouquet image — padding gives the drop-shadow room to breathe */}
         <motion.div
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setOpen(true)}
           style={{
             cursor: "pointer",
-            display: "inline-block",
-            borderRadius: "20px",
+            display: "block",
+            width: "min(380px, 90vw)",
+            margin: "0 auto",
+            padding: "20px 0",
             overflow: "visible",
-            maxWidth: "380px",
-            width: "100%",
           }}
         >
           <img
@@ -126,12 +133,10 @@ export default function BouquetSection({
             alt="Watercolour bouquet of sunflowers, lavender, baby's breath, tulips, chrysanthemums, carnations, peonies and daisies wrapped in sheer white cloth with a green ribbon for sathwik"
             style={{
               width: "100%",
+              maxWidth: "100%",
               height: "auto",
               display: "block",
-              objectFit: "contain",
-              objectPosition: "center",
-              background: "transparent",
-              filter: "drop-shadow(0 12px 28px rgba(58,90,64,0.18))",
+              filter: "drop-shadow(0 12px 32px rgba(58,90,64,0.22))",
             }}
           />
         </motion.div>
@@ -205,7 +210,6 @@ export default function BouquetSection({
                       border: `2px solid ${color}44`,
                     }}
                   >
-                    {/* Flower swatch */}
                     <div
                       style={{
                         width: "42px",

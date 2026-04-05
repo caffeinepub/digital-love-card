@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface PolaroidData {
   src: string;
@@ -18,8 +18,8 @@ interface PolaroidGallery2Props {
   editMode?: boolean;
 }
 
-// Wood clip SVG
-function WoodClip() {
+// Wood clip SVG — scales with card width
+function WoodClip({ size = 24 }: { size?: number }) {
   return (
     <svg
       className="wood-clip"
@@ -27,6 +27,7 @@ function WoodClip() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
+      style={{ width: size, height: Math.round(size * 1.4), flexShrink: 0 }}
     >
       <rect x="7" y="0" width="6" height="18" rx="3" fill="#8B6914" />
       <rect x="6" y="6" width="8" height="3" rx="1" fill="#6B4F10" />
@@ -79,17 +80,17 @@ const PLACEHOLDER_COLORS = [
   "#d0ecda",
 ];
 
-const CARD_WIDTH = 130;
-const CARD_GAP = 14;
-// 4 cards visible + gaps
+const CARD_GAP = 12;
 const VISIBLE = 4;
-const STRIDE = CARD_WIDTH + CARD_GAP;
+// Horizontal padding on each side inside the polaroid frame (from .polaroid-card padding: 8px 8px 36px 8px)
+const POLAROID_PADDING_H = 8; // 8px left + 8px right = 16px total
 
 function PolaroidCard({
   src,
   caption,
   rotation,
   index,
+  cardWidth,
   onUpload,
   editMode,
 }: {
@@ -97,6 +98,7 @@ function PolaroidCard({
   caption: string;
   rotation: number;
   index: number;
+  cardWidth: number;
   onUpload?: (
     index: number,
     bytes: Uint8Array<ArrayBuffer>,
@@ -106,6 +108,10 @@ function PolaroidCard({
   editMode?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Photo area must fit INSIDE the polaroid padding, so subtract the horizontal padding
+  const photoSize = cardWidth - POLAROID_PADDING_H * 2;
+  const clipSize = Math.max(14, Math.round(cardWidth * 0.18));
+  const captionFontSize = `${Math.max(0.55, cardWidth * 0.007)}rem`;
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -128,16 +134,18 @@ function PolaroidCard({
         flexDirection: "column",
         alignItems: "center",
         flexShrink: 0,
-        width: `${CARD_WIDTH}px`,
+        width: `${cardWidth}px`,
       }}
     >
-      <WoodClip />
+      <WoodClip size={clipSize} />
       <motion.div
         className="polaroid-card"
         data-ocid={`polaroid.item.${index + 1}`}
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "top center",
+          width: `${cardWidth}px`,
+          boxSizing: "border-box",
         }}
         whileHover={{ scale: 1.04 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -153,11 +161,11 @@ function PolaroidCard({
             aria-label={`Upload polaroid ${index + 1}`}
           />
         )}
-        {/* Photo area */}
+        {/* Photo area — square, sized to fit within the polaroid padding */}
         <div
           style={{
-            width: `${CARD_WIDTH}px`,
-            height: `${CARD_WIDTH}px`,
+            width: `${photoSize}px`,
+            height: `${photoSize}px`,
             background: src
               ? undefined
               : PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length],
@@ -190,10 +198,10 @@ function PolaroidCard({
             >
               {editMode ? (
                 <>
-                  <span style={{ fontSize: "1.6rem" }}>📷</span>
+                  <span style={{ fontSize: "1.2rem" }}>📷</span>
                   <span
                     style={{
-                      fontSize: "0.6rem",
+                      fontSize: "0.55rem",
                       color: "#5f735f",
                       fontStyle: "italic",
                     }}
@@ -202,22 +210,25 @@ function PolaroidCard({
                   </span>
                 </>
               ) : (
-                <span style={{ fontSize: "1.8rem", opacity: 0.4 }}>🌿</span>
+                <span style={{ fontSize: "1.2rem", opacity: 0.4 }}>🌿</span>
               )}
             </div>
           )}
         </div>
-        {/* Caption */}
+        {/* Caption — fills the padded content width */}
         <div
           style={{
-            width: `${CARD_WIDTH}px`,
-            paddingTop: "6px",
+            width: "100%",
+            paddingTop: "4px",
             fontFamily: "'Great Vibes', cursive",
-            fontSize: "0.85rem",
+            fontSize: captionFontSize,
             color: "#5f735f",
             textAlign: "center",
             lineHeight: 1.3,
-            minHeight: "26px",
+            minHeight: "20px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {caption}
@@ -282,6 +293,38 @@ function PolaroidString({
   const totalSlots = 10;
   const maxPage = totalSlots - VISIBLE; // 6 pages (indices 0..6)
 
+  // Measure the available width for the card viewport
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      // Account for the two arrow buttons (32px each) and gaps (12px each side)
+      const arrowsAndGaps = 32 * 2 + 12 * 2;
+      const available = el.getBoundingClientRect().width - arrowsAndGaps;
+      setContainerWidth(Math.max(available, 0));
+    };
+
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // cardWidth = (viewportWidth - 3 gaps) / 4
+  const cardWidth =
+    containerWidth > 0
+      ? Math.floor((containerWidth - (VISIBLE - 1) * CARD_GAP) / VISIBLE)
+      : 100; // safe fallback until measured
+
+  const stride = cardWidth + CARD_GAP;
+  const viewportWidth = VISIBLE * stride - CARD_GAP;
+  const offsetX = -(page * stride);
+
   // Touch / pointer drag tracking
   const dragStartX = useRef<number | null>(null);
   const dragDelta = useRef(0);
@@ -304,10 +347,8 @@ function PolaroidString({
     const delta = dragDelta.current;
     const threshold = 40;
     if (delta < -threshold) {
-      // swipe left → next
       setPage((p) => Math.min(p + 1, maxPage));
     } else if (delta > threshold) {
-      // swipe right → prev
       setPage((p) => Math.max(p - 1, 0));
     }
     dragStartX.current = null;
@@ -315,18 +356,12 @@ function PolaroidString({
     setDragging(false);
   }
 
-  // Arrow navigation
   function prev() {
     setPage((p) => Math.max(p - 1, 0));
   }
   function next() {
     setPage((p) => Math.min(p + 1, maxPage));
   }
-
-  // Viewport width = 4 cards + 3 gaps
-  const viewportWidth = VISIBLE * STRIDE - CARD_GAP;
-  // Offset = page * one card stride
-  const offsetX = -(page * STRIDE);
 
   return (
     <motion.div
@@ -353,14 +388,15 @@ function PolaroidString({
         <FairyLights />
       </div>
 
-      {/* Swipeable viewport */}
+      {/* Swipeable viewport — full width row with arrows */}
       <div
+        ref={containerRef}
         style={{
           position: "relative",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
           gap: "12px",
+          width: "100%",
         }}
       >
         {/* Left arrow */}
@@ -369,6 +405,7 @@ function PolaroidString({
           aria-label="Previous polaroids"
           onClick={prev}
           disabled={page === 0}
+          data-ocid="polaroid.pagination_prev"
           style={{
             flexShrink: 0,
             width: "32px",
@@ -390,12 +427,15 @@ function PolaroidString({
           ‹
         </button>
 
-        {/* Clipping window */}
+        {/* Clipping window — fills remaining space */}
         <div
           style={{
-            width: `${viewportWidth}px`,
+            flex: 1,
             overflow: "hidden",
             cursor: dragging ? "grabbing" : "grab",
+            // Explicit pixel width only after we've measured
+            width: containerWidth > 0 ? `${viewportWidth}px` : undefined,
+            maxWidth: "100%",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -426,6 +466,7 @@ function PolaroidString({
                   caption={p.caption}
                   rotation={p.rotation || DEFAULT_ROT_10[i % 10]}
                   index={globalIdx}
+                  cardWidth={cardWidth}
                   onUpload={onUpload}
                   editMode={editMode}
                 />
@@ -440,6 +481,7 @@ function PolaroidString({
           aria-label="Next polaroids"
           onClick={next}
           disabled={page >= maxPage}
+          data-ocid="polaroid.pagination_next"
           style={{
             flexShrink: 0,
             width: "32px",
@@ -514,7 +556,11 @@ export default function PolaroidGallery2({
       style={{
         position: "relative",
         zIndex: 1,
-        padding: "32px 20px 48px",
+        padding: "32px 16px 48px",
+        // Prevent any horizontal overflow from this section
+        overflow: "hidden",
+        boxSizing: "border-box",
+        width: "100%",
       }}
     >
       <motion.h2
