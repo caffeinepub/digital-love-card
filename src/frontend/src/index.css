@@ -1,0 +1,359 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Pista green palette — OKLCH */
+    --background: 0.955 0.035 148; /* #d8f3dc pista green */
+    --foreground: 0.32 0.06 143; /* dark olive green */
+    --card: 0.98 0.01 148; /* soft white-green */
+    --card-foreground: 0.32 0.06 143;
+    --popover: 0.99 0.005 148;
+    --popover-foreground: 0.32 0.06 143;
+    --primary: 0.45 0.09 143; /* olive green */
+    --primary-foreground: 0.98 0.01 148;
+    --secondary: 0.9 0.04 148;
+    --secondary-foreground: 0.32 0.06 143;
+    --muted: 0.92 0.03 148;
+    --muted-foreground: 0.52 0.05 143;
+    --accent: 0.85 0.08 148;
+    --accent-foreground: 0.32 0.06 143;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.8 0.06 148;
+    --input: 0.92 0.03 148;
+    --ring: 0.45 0.09 143;
+    --chart-1: 0.65 0.14 148;
+    --chart-2: 0.75 0.12 155;
+    --chart-3: 0.82 0.1 90;
+    --chart-4: 0.6 0.12 143;
+    --chart-5: 0.5 0.1 148;
+    --sidebar: 0.93 0.04 148;
+    --sidebar-foreground: 0.32 0.06 143;
+    --sidebar-primary: 0.45 0.09 143;
+    --sidebar-primary-foreground: 0.98 0.01 148;
+    --sidebar-accent: 0.88 0.06 148;
+    --sidebar-accent-foreground: 0.32 0.06 143;
+    --sidebar-border: 0.8 0.06 148;
+    --sidebar-ring: 0.45 0.09 143;
+
+    /* Named palette */
+    --color-pista: #d8f3dc;
+    --color-olive-dark: #3a5a40;
+    --color-olive: #5f735f;
+    --color-olive-light: #7a9e7e;
+    --color-cream: #f7fff8;
+    --color-yellow: #f4d35e;
+    --color-yellow-warm: #ffd166;
+    --color-green-ribbon: #6fbf73;
+    --color-rose-gold: #e8c4b8;
+    --color-rose-gold-dark: #d4956a;
+    --color-rose-gold-light: #f5ddd7;
+    --color-white-soft: rgba(255, 255, 255, 0.92);
+  }
+
+  * {
+    box-sizing: border-box;
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #d8f3dc;
+    color: var(--color-olive-dark);
+    margin: 0;
+    font-family: "Lora", Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================
+   STAR CANVAS — full viewport background
+   ============================================ */
+#star-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+.font-libre-baskerville {
+  font-family: "Libre Baskerville", Georgia, serif;
+}
+
+.font-great-vibes {
+  font-family: "Great Vibes", cursive;
+}
+
+.font-lora {
+  font-family: "Lora", Georgia, serif;
+}
+
+/* ============================================
+   FADE IN ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================
+   FLOATING / BOBBING
+   ============================================ */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes floatSlow {
+  0% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(1deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(-1deg);
+  }
+}
+
+.float-anim {
+  animation: float 3.5s ease-in-out infinite;
+}
+
+.float-slow {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+/* ============================================
+   BALLOON LETTERS
+   ============================================ */
+@keyframes balloonFloat {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.balloon-word {
+  animation: balloonFloat 3s ease-in-out infinite;
+}
+
+.balloon-word:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.balloon-word:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+/* ============================================
+   DICE ROLL ANIMATION
+   ============================================ */
+@keyframes diceRoll {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(120deg) scale(1.05);
+  }
+  40% {
+    transform: rotate(240deg) scale(0.98);
+  }
+  60% {
+    transform: rotate(540deg) scale(1.05);
+  }
+  80% {
+    transform: rotate(700deg) scale(0.96);
+  }
+  100% {
+    transform: rotate(720deg) scale(1);
+  }
+}
+
+.dice-rolling {
+  animation: diceRoll 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+}
+
+/* ============================================
+   FAIRY LIGHT PULSE
+   ============================================ */
+@keyframes fairyGlow {
+  0%,
+  100% {
+    opacity: 0.7;
+    box-shadow: 0 0 4px 2px rgba(244, 211, 94, 0.5);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 8px 4px rgba(255, 209, 102, 0.85);
+  }
+}
+
+.fairy-light {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f4d35e;
+  animation: fairyGlow 1.8s ease-in-out infinite;
+}
+
+/* ============================================
+   POLAROID
+   ============================================ */
+.polaroid-card {
+  background: #fffdf9;
+  padding: 8px 8px 36px 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13), 0 2px 4px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s
+    ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.polaroid-card:hover {
+  transform: translateY(-4px) rotate(0deg) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+/* ============================================
+   SECTION ENTRANCE (intersection observer)
+   ============================================ */
+.section-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================
+   TIMER CARDS
+   ============================================ */
+.timer-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(111, 191, 115, 0.25);
+  border-radius: 16px;
+  padding: 16px 10px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(63, 90, 58, 0.08);
+}
+
+/* ============================================
+   EDIT PANEL OVERRIDES
+   ============================================ */
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(111, 191, 115, 0.4);
+  background: rgba(255, 255, 255, 0.9);
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.82rem;
+  color: var(--color-olive-dark);
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.edit-input:focus {
+  border-color: rgba(111, 191, 115, 0.7);
+}
+
+/* ============================================
+   MUSIC BUTTON (reuse existing)
+   ============================================ */
+.music-btn {
+  animation: fadeIn 1s ease 2s both;
+}
+
+/* ============================================
+   MODAL OVERLAY
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 60, 32, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-box {
+  background: rgba(247, 255, 248, 0.98);
+  border-radius: 24px;
+  padding: 32px 28px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(30, 60, 32, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(111, 191, 115, 0.3);
+  position: relative;
+}
+
+/* ============================================
+   WOOD CLIP SVG style
+   ============================================ */
+.wood-clip {
+  display: block;
+  margin: 0 auto -2px;
+  width: 20px;
+  height: 28px;
+}

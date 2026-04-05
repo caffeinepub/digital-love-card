@@ -1,6 +1,6 @@
+import tailwindAnimate from "tailwindcss-animate";
 import typography from "@tailwindcss/typography";
 import containerQueries from "@tailwindcss/container-queries";
-import animate from "tailwindcss-animate";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,9 +10,7 @@ export default {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       colors: {
@@ -66,16 +64,18 @@ export default {
           border: "oklch(var(--sidebar-border))",
           ring: "oklch(var(--sidebar-ring))",
         },
-        // Named romance palette
-        blush: "#F4A7B9",
-        cream: "#FFF8F0",
-        beige: "#F5ECD7",
-        lavender: "#C9B8D8",
-        "rose-text": "#5C4A5A",
-        "rose-muted": "#9B8496",
+        // Anniversary palette
+        pista: "#d8f3dc",
+        olive: { dark: "#3a5a40", DEFAULT: "#5f735f", light: "#7a9e7e" },
+        cream: "#f7fff8",
+        "rose-gold": "#e8c4b8",
+        "rose-gold-dark": "#d4956a",
+        "yellow-fairy": "#f4d35e",
       },
       fontFamily: {
-        script: ["'Dancing Script'", "cursive"],
+        libre: ["'Libre Baskerville'", "Georgia", "serif"],
+        vibes: ["'Great Vibes'", "cursive"],
+        lora: ["'Lora'", "Georgia", "serif"],
         serif: ["'Lora'", "Georgia", "serif"],
       },
       borderRadius: {
@@ -85,9 +85,8 @@ export default {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        blush: "0 4px 24px rgba(244,167,185,0.18)",
-        "blush-lg": "0 8px 40px rgba(244,167,185,0.28)",
-        polaroid: "0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)",
+        soft: "0 4px 24px rgba(63,90,58,0.10)",
+        card: "0 4px 20px rgba(63,90,58,0.10), 0 1px 4px rgba(0,0,0,0.06)",
       },
       keyframes: {
         "accordion-down": {
@@ -105,5 +104,5 @@ export default {
       },
     },
   },
-  plugins: [typography, containerQueries, animate],
+  plugins: [tailwindAnimate, typography, containerQueries],
 };

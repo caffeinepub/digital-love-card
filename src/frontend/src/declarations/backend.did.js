@@ -8,61 +8,155 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const LoveReasonCard = IDL.Record({
+export const _CaffeineStorageCreateCertificateResult = IDL.Record({
+  'method' : IDL.Text,
+  'blob_hash' : IDL.Text,
+});
+export const _CaffeineStorageRefillInformation = IDL.Record({
+  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const _CaffeineStorageRefillResult = IDL.Record({
+  'success' : IDL.Opt(IDL.Bool),
+  'topped_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const LoveCard = IDL.Record({
   'title' : IDL.Text,
   'description' : IDL.Text,
+  'photos' : IDL.Vec(IDL.Record({ 'src' : IDL.Text, 'rotation' : IDL.Int })),
 });
-export const PhotoCaptions = IDL.Record({
-  'graduation' : IDL.Text,
-  'winterGarden' : IDL.Text,
-  'daughterPhotos' : IDL.Text,
-  'berlinMuseum' : IDL.Text,
-  'hamptonsNight' : IDL.Text,
-  'romeColosseum' : IDL.Text,
-  'firstBerlinPhoto' : IDL.Text,
+export const GalleryPhoto = IDL.Record({
+  'src' : IDL.Text,
+  'top' : IDL.Nat,
+  'rotation' : IDL.Int,
+  'zIndex' : IDL.Nat,
+  'left' : IDL.Nat,
+  'size' : IDL.Nat,
+  'caption' : IDL.Text,
 });
 export const CardContent = IDL.Record({
-  'loveLetter' : IDL.Text,
-  'photoCaptions' : PhotoCaptions,
-  'reasonCards' : IDL.Vec(LoveReasonCard),
+  'loveCards' : IDL.Vec(LoveCard),
+  'letterText' : IDL.Text,
+  'uploadedImages' : IDL.Vec(ExternalBlob),
+  'audioFileName' : IDL.Text,
+  'uploadedAudio' : IDL.Vec(ExternalBlob),
+  'galleryPhotos' : IDL.Vec(GalleryPhoto),
 });
 
 export const idlService = IDL.Service({
-  'getAllReasonCards' : IDL.Func([], [IDL.Vec(LoveReasonCard)], ['query']),
-  'getCardContent' : IDL.Func([], [CardContent], ['query']),
-  'getLoveLetter' : IDL.Func([], [IDL.Text], ['query']),
-  'getPhotoCaptions' : IDL.Func([], [PhotoCaptions], ['query']),
-  'getReasonCard' : IDL.Func([IDL.Nat], [LoveReasonCard], ['query']),
+  '_caffeineStorageBlobIsLive' : IDL.Func(
+      [IDL.Vec(IDL.Nat8)],
+      [IDL.Bool],
+      ['query'],
+    ),
+  '_caffeineStorageBlobsToDelete' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      ['query'],
+    ),
+  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      [],
+      [],
+    ),
+  '_caffeineStorageCreateCertificate' : IDL.Func(
+      [IDL.Text],
+      [_CaffeineStorageCreateCertificateResult],
+      [],
+    ),
+  '_caffeineStorageRefillCashier' : IDL.Func(
+      [IDL.Opt(_CaffeineStorageRefillInformation)],
+      [_CaffeineStorageRefillResult],
+      [],
+    ),
+  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  'addAudio' : IDL.Func([ExternalBlob], [], []),
+  'addImage' : IDL.Func([ExternalBlob], [], []),
+  'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+  'getContent' : IDL.Func([], [CardContent], []),
+  'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+  'listAudio' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
+  'listImages' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
+  'replaceAudio' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+  'replaceImage' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+  'saveContent' : IDL.Func([CardContent], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const LoveReasonCard = IDL.Record({
+  const _CaffeineStorageCreateCertificateResult = IDL.Record({
+    'method' : IDL.Text,
+    'blob_hash' : IDL.Text,
+  });
+  const _CaffeineStorageRefillInformation = IDL.Record({
+    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const _CaffeineStorageRefillResult = IDL.Record({
+    'success' : IDL.Opt(IDL.Bool),
+    'topped_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const LoveCard = IDL.Record({
     'title' : IDL.Text,
     'description' : IDL.Text,
+    'photos' : IDL.Vec(IDL.Record({ 'src' : IDL.Text, 'rotation' : IDL.Int })),
   });
-  const PhotoCaptions = IDL.Record({
-    'graduation' : IDL.Text,
-    'winterGarden' : IDL.Text,
-    'daughterPhotos' : IDL.Text,
-    'berlinMuseum' : IDL.Text,
-    'hamptonsNight' : IDL.Text,
-    'romeColosseum' : IDL.Text,
-    'firstBerlinPhoto' : IDL.Text,
+  const GalleryPhoto = IDL.Record({
+    'src' : IDL.Text,
+    'top' : IDL.Nat,
+    'rotation' : IDL.Int,
+    'zIndex' : IDL.Nat,
+    'left' : IDL.Nat,
+    'size' : IDL.Nat,
+    'caption' : IDL.Text,
   });
   const CardContent = IDL.Record({
-    'loveLetter' : IDL.Text,
-    'photoCaptions' : PhotoCaptions,
-    'reasonCards' : IDL.Vec(LoveReasonCard),
+    'loveCards' : IDL.Vec(LoveCard),
+    'letterText' : IDL.Text,
+    'uploadedImages' : IDL.Vec(ExternalBlob),
+    'audioFileName' : IDL.Text,
+    'uploadedAudio' : IDL.Vec(ExternalBlob),
+    'galleryPhotos' : IDL.Vec(GalleryPhoto),
   });
   
   return IDL.Service({
-    'getAllReasonCards' : IDL.Func([], [IDL.Vec(LoveReasonCard)], ['query']),
-    'getCardContent' : IDL.Func([], [CardContent], ['query']),
-    'getLoveLetter' : IDL.Func([], [IDL.Text], ['query']),
-    'getPhotoCaptions' : IDL.Func([], [PhotoCaptions], ['query']),
-    'getReasonCard' : IDL.Func([IDL.Nat], [LoveReasonCard], ['query']),
+    '_caffeineStorageBlobIsLive' : IDL.Func(
+        [IDL.Vec(IDL.Nat8)],
+        [IDL.Bool],
+        ['query'],
+      ),
+    '_caffeineStorageBlobsToDelete' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
+    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        [],
+        [],
+      ),
+    '_caffeineStorageCreateCertificate' : IDL.Func(
+        [IDL.Text],
+        [_CaffeineStorageCreateCertificateResult],
+        [],
+      ),
+    '_caffeineStorageRefillCashier' : IDL.Func(
+        [IDL.Opt(_CaffeineStorageRefillInformation)],
+        [_CaffeineStorageRefillResult],
+        [],
+      ),
+    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    'addAudio' : IDL.Func([ExternalBlob], [], []),
+    'addImage' : IDL.Func([ExternalBlob], [], []),
+    'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+    'getContent' : IDL.Func([], [CardContent], []),
+    'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+    'listAudio' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
+    'listImages' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
+    'replaceAudio' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+    'replaceImage' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+    'saveContent' : IDL.Func([CardContent], [], []),
   });
 };
 

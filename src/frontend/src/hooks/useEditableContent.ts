@@ -1,4 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { GalleryPhoto, LoveCard } from "../backend.d";
+// Use Awaited<ReturnType> pattern to get the CardContent type that matches the runtime actor
+type BackendCardContent = Awaited<
+  ReturnType<import("../backend.d").backendInterface["getContent"]>
+>;
+import { ExternalBlob } from "../backend";
+import { useActor } from "./useActor";
 
 export interface LoveCardData {
   title: string;
@@ -153,36 +160,123 @@ const DEFAULT_CONTENT: LoveCardContent = {
   audioFileName: "",
 };
 
-const STORAGE_KEY = "love-card-content";
+// Convert backend CardContent → frontend LoveCardContent
+function fromBackend(
+  backend: BackendCardContent,
+  resolvedAudioUrl: string,
+): LoveCardContent {
+  return {
+    letterText: backend.letterText || DEFAULT_CONTENT.letterText,
+    loveCards:
+      backend.loveCards.length > 0
+        ? backend.loveCards.map((card: LoveCard) => ({
+            title: card.title,
+            description: card.description,
+            photos: card.photos.map((p) => ({
+              src: p.src,
+              rotation: Number(p.rotation),
+            })),
+          }))
+        : DEFAULT_CONTENT.loveCards,
+    galleryPhotos:
+      backend.galleryPhotos.length > 0
+        ? backend.galleryPhotos.map((p: GalleryPhoto) => ({
+            src: p.src,
+            caption: p.caption,
+            rotation: Number(p.rotation),
+            size: Number(p.size),
+            top: Number(p.top),
+            left: Number(p.left),
+            zIndex: Number(p.zIndex),
+          }))
+        : DEFAULT_CONTENT.galleryPhotos,
+    spotifyUrl: "",
+    audioDataUrl: resolvedAudioUrl,
+    audioFileName: backend.audioFileName || "",
+  };
+}
 
-function loadFromStorage(): LoveCardContent {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_CONTENT;
-    const parsed = JSON.parse(raw) as Partial<LoveCardContent>;
-    return {
-      letterText: parsed.letterText ?? DEFAULT_CONTENT.letterText,
-      loveCards: parsed.loveCards ?? DEFAULT_CONTENT.loveCards,
-      galleryPhotos: parsed.galleryPhotos ?? DEFAULT_CONTENT.galleryPhotos,
-      spotifyUrl: parsed.spotifyUrl ?? DEFAULT_CONTENT.spotifyUrl,
-      audioDataUrl: parsed.audioDataUrl ?? DEFAULT_CONTENT.audioDataUrl,
-      audioFileName: parsed.audioFileName ?? DEFAULT_CONTENT.audioFileName,
-    };
-  } catch {
-    return DEFAULT_CONTENT;
-  }
+// Convert frontend LoveCardContent → backend CardContent (compatible with saveContent parameter)
+function toBackend(
+  content: LoveCardContent,
+  uploadedImages: ExternalBlob[],
+  uploadedAudio: ExternalBlob[],
+) {
+  return {
+    letterText: content.letterText,
+    loveCards: content.loveCards.map((card) => ({
+      title: card.title,
+      description: card.description,
+      photos: card.photos.map((p) => ({
+        src: p.src,
+        rotation: BigInt(Math.round(p.rotation)),
+      })),
+    })),
+    galleryPhotos: content.galleryPhotos.map((p) => ({
+      src: p.src,
+      caption: p.caption,
+      rotation: BigInt(Math.round(p.rotation)),
+      size: BigInt(Math.round(p.size)),
+      top: BigInt(Math.round(p.top)),
+      left: BigInt(Math.round(p.left)),
+      zIndex: BigInt(Math.round(p.zIndex)),
+    })),
+    uploadedImages,
+    audioFileName: content.audioFileName,
+    uploadedAudio,
+  };
 }
 
 export function useEditableContent() {
-  const [content, setContent] = useState<LoveCardContent>(loadFromStorage);
+  const { actor, isFetching } = useActor();
+  const [content, setContent] = useState<LoveCardContent>(DEFAULT_CONTENT);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
 
+  // Track raw audio bytes when user uploads a new file (before save)
+  const pendingAudioBytesRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const hasAudioUploadedRef = useRef(false);
+
+  // Track raw card image bytes keyed by "cardIndex-photoIndex" before save
+  const pendingCardImagesRef = useRef<
+    Map<string, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+  >(new Map());
+
+  // Load from backend once actor is available
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-    } catch {
-      // ignore storage errors
+    if (!actor || isFetching) return;
+
+    let cancelled = false;
+    setIsLoadingContent(true);
+
+    async function load() {
+      if (!actor) return;
+      try {
+        const backendContent = await actor.getContent();
+
+        // Resolve audio URL if available
+        let resolvedAudioUrl = "";
+        if (
+          backendContent.uploadedAudio &&
+          backendContent.uploadedAudio.length > 0
+        ) {
+          resolvedAudioUrl = backendContent.uploadedAudio[0].getDirectURL();
+        }
+
+        if (!cancelled) {
+          setContent(fromBackend(backendContent, resolvedAudioUrl));
+        }
+      } catch {
+        // Backend unavailable — keep defaults
+      } finally {
+        if (!cancelled) setIsLoadingContent(false);
+      }
     }
-  }, [content]);
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [actor, isFetching]);
 
   const setLetterText = (text: string) =>
     setContent((prev) => ({ ...prev, letterText: text }));
@@ -196,23 +290,178 @@ export function useEditableContent() {
   const setSpotifyUrl = (url: string) =>
     setContent((prev) => ({ ...prev, spotifyUrl: url }));
 
-  const setAudio = (dataUrl: string, fileName: string) =>
+  // Store audio bytes in ref for upload on save; update display immediately
+  const setAudio = (
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => {
+    pendingAudioBytesRef.current = bytes;
+    hasAudioUploadedRef.current = true;
     setContent((prev) => ({
       ...prev,
-      audioDataUrl: dataUrl,
+      audioDataUrl: previewUrl,
       audioFileName: fileName,
     }));
+  };
 
-  const clearAudio = () =>
+  const clearAudio = () => {
+    pendingAudioBytesRef.current = null;
+    hasAudioUploadedRef.current = false;
     setContent((prev) => ({ ...prev, audioDataUrl: "", audioFileName: "" }));
+  };
+
+  // Store card photo bytes in ref; update preview src immediately via blob URL
+  const setCardPhoto = (
+    cardIndex: number,
+    photoIndex: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => {
+    const key = `${cardIndex}-${photoIndex}`;
+    pendingCardImagesRef.current.set(key, { bytes, fileName });
+    setContent((prev) => {
+      const updatedCards = prev.loveCards.map((card, ci) => {
+        if (ci !== cardIndex) return card;
+        const updatedPhotos = card.photos.map((p, pi) =>
+          pi === photoIndex ? { ...p, src: previewUrl } : p,
+        );
+        return { ...card, photos: updatedPhotos };
+      });
+      return { ...prev, loveCards: updatedCards };
+    });
+  };
+
+  // Save everything to the backend canister
+  async function saveToBackend(): Promise<void> {
+    if (!actor) throw new Error("Actor not ready");
+
+    // Handle audio upload/replace first
+    let uploadedAudio: ExternalBlob[] = [];
+    if (hasAudioUploadedRef.current && pendingAudioBytesRef.current) {
+      const blob = ExternalBlob.fromBytes(pendingAudioBytesRef.current);
+
+      // Check if audio already exists
+      const existingAudio = await actor.listAudio();
+      if (existingAudio.length > 0) {
+        await actor.replaceAudio(0n, blob);
+      } else {
+        await actor.addAudio(blob);
+      }
+
+      // Refresh audio URL
+      const freshAudio = await actor.listAudio();
+      if (freshAudio.length > 0) {
+        const freshUrl = freshAudio[0].getDirectURL();
+        setContent((prev) => ({ ...prev, audioDataUrl: freshUrl }));
+        uploadedAudio = freshAudio;
+      }
+
+      // Clear pending bytes after successful upload
+      pendingAudioBytesRef.current = null;
+      hasAudioUploadedRef.current = false;
+    } else {
+      // Preserve existing audio blobs from backend
+      uploadedAudio = await actor.listAudio();
+    }
+
+    // Handle pending card photo uploads
+    let uploadedImages = await actor.listImages();
+    const pendingCardImages = pendingCardImagesRef.current;
+
+    if (pendingCardImages.size > 0) {
+      // Upload each pending card image and collect real URLs to patch into content
+      const patchMap = new Map<string, string>();
+
+      // Process all pending uploads in parallel
+      await Promise.all(
+        Array.from(pendingCardImages.entries()).map(
+          async ([key, { bytes }]) => {
+            const blob = ExternalBlob.fromBytes(bytes);
+            const keyParts = key.split("-");
+            const cardIndex = Number(keyParts[0]);
+            const photoIndex = Number(keyParts[1]);
+
+            // Determine the slot index in the global image list for this card/photo
+            // We use a deterministic slot: card 0 photo 0 = slot 0, card 0 photo 1 = slot 1, etc.
+            const slotIndex = cardIndex * 2 + photoIndex;
+
+            if (slotIndex < uploadedImages.length) {
+              await actor.replaceImage(BigInt(slotIndex), blob);
+            } else {
+              await actor.addImage(blob);
+            }
+
+            // Re-fetch images to get updated URLs
+            const freshImages = await actor.listImages();
+            const actualSlot = Math.min(slotIndex, freshImages.length - 1);
+            if (freshImages[actualSlot]) {
+              patchMap.set(key, freshImages[actualSlot].getDirectURL());
+            }
+          },
+        ),
+      );
+
+      // Refresh full image list after uploads
+      uploadedImages = await actor.listImages();
+
+      // Patch content src values with real URLs
+      if (patchMap.size > 0) {
+        setContent((prev) => {
+          const updatedCards = prev.loveCards.map((card, ci) => {
+            const updatedPhotos = card.photos.map((p, pi) => {
+              const realUrl = patchMap.get(`${ci}-${pi}`);
+              return realUrl ? { ...p, src: realUrl } : p;
+            });
+            return { ...card, photos: updatedPhotos };
+          });
+          return { ...prev, loveCards: updatedCards };
+        });
+      }
+
+      pendingCardImagesRef.current = new Map();
+    }
+
+    // Save content to backend (use latest content snapshot after state patches)
+    // We read content from closure; patched URLs are in the state update queue.
+    // Build backend payload using the latest loveCards (with real URLs where patched).
+    const latestLoveCards = content.loveCards.map((card, ci) => {
+      return {
+        ...card,
+        photos: card.photos.map((p, pi) => {
+          // If we just patched this slot, grab the real URL from uploadedImages
+          const slotIndex = ci * 2 + pi;
+          if (
+            pendingCardImages.has(`${ci}-${pi}`) &&
+            uploadedImages[slotIndex]
+          ) {
+            return { ...p, src: uploadedImages[slotIndex].getDirectURL() };
+          }
+          return p;
+        }),
+      };
+    });
+
+    const contentForSave = { ...content, loveCards: latestLoveCards };
+    const backendContent = toBackend(
+      contentForSave,
+      uploadedImages,
+      uploadedAudio,
+    );
+    await actor.saveContent(backendContent);
+  }
 
   return {
     content,
+    isLoadingContent,
     setLetterText,
     setLoveCards,
     setGalleryPhotos,
     setSpotifyUrl,
     setAudio,
     clearAudio,
+    setCardPhoto,
+    saveToBackend,
   };
 }

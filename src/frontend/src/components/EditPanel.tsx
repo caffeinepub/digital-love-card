@@ -16,8 +16,20 @@ interface EditPanelProps {
   setLoveCards: (cards: LoveCardData[]) => void;
   setGalleryPhotos: (photos: GalleryPhotoData[]) => void;
   setSpotifyUrl: (url: string) => void;
-  setAudio: (dataUrl: string, fileName: string) => void;
+  setAudio: (
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
   clearAudio: () => void;
+  setCardPhoto: (
+    cardIndex: number,
+    photoIndex: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
+  onSave: () => Promise<void>;
 }
 
 type TabId = "letter" | "cards" | "music" | "gallery";
@@ -62,6 +74,8 @@ const sectionHeadingStyle: React.CSSProperties = {
   margin: "0 0 12px 0",
 };
 
+type SaveState = "idle" | "saving" | "saved" | "error";
+
 export default function EditPanel({
   isUnlocked,
   letterText,
@@ -73,11 +87,21 @@ export default function EditPanel({
   setGalleryPhotos,
   setAudio,
   clearAudio,
+  setCardPhoto,
+  onSave,
 }: EditPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("letter");
   const [audioUploading, setAudioUploading] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  // Refs for card photo file inputs: keyed "cardIndex-photoIndex"
+  const cardPhotoInputRefs = React.useRef<Map<string, HTMLInputElement>>(
+    new Map(),
+  );
+  const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   function handleAudioFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -85,16 +109,54 @@ export default function EditPanel({
     setAudioUploading(true);
     const reader = new FileReader();
     reader.onload = () => {
-      setAudio(reader.result as string, file.name);
+      const arrayBuffer = reader.result as ArrayBuffer;
+      const bytes = new Uint8Array(arrayBuffer);
+      // Create a preview URL for immediate playback
+      const blob = new Blob([bytes], { type: file.type || "audio/mpeg" });
+      const previewUrl = URL.createObjectURL(blob);
+      setAudio(bytes, file.name, previewUrl);
       setAudioUploading(false);
     };
     reader.onerror = () => setAudioUploading(false);
-    reader.readAsDataURL(file);
+    reader.readAsArrayBuffer(file);
     // Reset so the same file can be re-selected
     e.target.value = "";
   }
 
-  if (!isUnlocked) return null;
+  function handleCardPhotoFile(
+    e: React.ChangeEvent<HTMLInputElement>,
+    cardIndex: number,
+    photoIndex: number,
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const arrayBuffer = reader.result as ArrayBuffer;
+      const bytes = new Uint8Array(arrayBuffer);
+      const imageBlob = new Blob([bytes], {
+        type: file.type || "image/jpeg",
+      });
+      const previewUrl = URL.createObjectURL(imageBlob);
+      setCardPhoto(cardIndex, photoIndex, bytes, file.name, previewUrl);
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
+
+  async function handleSave() {
+    if (saveState === "saving") return;
+    setSaveState("saving");
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    try {
+      await onSave();
+      setSaveState("saved");
+      saveTimeoutRef.current = setTimeout(() => setSaveState("idle"), 2500);
+    } catch {
+      setSaveState("error");
+      saveTimeoutRef.current = setTimeout(() => setSaveState("idle"), 3000);
+    }
+  }
 
   const updateCard = (
     cardIndex: number,
@@ -133,6 +195,22 @@ export default function EditPanel({
     );
     setGalleryPhotos(updated);
   };
+
+  const saveButtonLabel =
+    saveState === "saving"
+      ? "Saving…"
+      : saveState === "saved"
+        ? "Saved ✓"
+        : saveState === "error"
+          ? "Error — try again"
+          : "Save changes";
+
+  const saveButtonBg =
+    saveState === "saved"
+      ? "linear-gradient(135deg, #7EC8A0 0%, #5BAA82 100%)"
+      : saveState === "error"
+        ? "linear-gradient(135deg, #E8849A 0%, #C96880 100%)"
+        : "linear-gradient(135deg, #F4A7B9 0%, #D47A91 100%)";
 
   return (
     <>
@@ -363,26 +441,146 @@ export default function EditPanel({
                           style={{ ...inputStyle, resize: "vertical" }}
                         />
                       </div>
-                      {card.photos.slice(0, 2).map((photo, pi) => (
-                        <div key={photo.src || `photo-url-${pi}`}>
-                          <label
-                            style={labelStyle}
-                            htmlFor={`card-${i}-photo-${pi}`}
+                      {([0, 1] as const).map((pi) => {
+                        const photo = card.photos[pi];
+                        if (!photo) return null;
+                        const inputKey = `${i}-${pi}`;
+                        const fileInputId = `card-photo-file-${i}-${pi}`;
+                        const urlInputId = `card-${i}-photo-${pi}`;
+                        const slotLabel = pi === 0 ? "Pic 1" : "Pic 2";
+                        const slotAlt =
+                          pi === 0
+                            ? `Card ${i + 1} slot 1`
+                            : `Card ${i + 1} slot 2`;
+                        const slotKey =
+                          pi === 0 ? `card-${i}-slot-a` : `card-${i}-slot-b`;
+                        return (
+                          <div
+                            key={slotKey}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "6px",
+                            }}
                           >
-                            Photo {pi + 1} URL
-                          </label>
-                          <input
-                            id={`card-${i}-photo-${pi}`}
-                            type="text"
-                            value={photo.src}
-                            onChange={(e) =>
-                              updateCardPhoto(i, pi, e.target.value)
-                            }
-                            placeholder="https://..."
-                            style={inputStyle}
-                          />
-                        </div>
-                      ))}
+                            <label style={labelStyle} htmlFor={fileInputId}>
+                              {slotLabel}
+                            </label>
+
+                            {/* Hidden file input — linked to label above via id */}
+                            <input
+                              id={fileInputId}
+                              ref={(el) => {
+                                if (el) {
+                                  cardPhotoInputRefs.current.set(inputKey, el);
+                                } else {
+                                  cardPhotoInputRefs.current.delete(inputKey);
+                                }
+                              }}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleCardPhotoFile(e, i, pi)}
+                              style={{ display: "none" }}
+                            />
+
+                            {/* Upload button + thumbnail row */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              {/* Thumbnail preview */}
+                              {photo.src && (
+                                <img
+                                  src={photo.src}
+                                  alt={slotAlt}
+                                  style={{
+                                    width: "58px",
+                                    height: "58px",
+                                    objectFit: "cover",
+                                    borderRadius: "8px",
+                                    flexShrink: 0,
+                                    boxShadow: "0 2px 10px rgba(92,74,90,0.18)",
+                                    border:
+                                      "1.5px solid rgba(244,167,185,0.35)",
+                                  }}
+                                />
+                              )}
+
+                              {/* Upload button */}
+                              <button
+                                type="button"
+                                data-ocid="edit.cards.upload_button"
+                                onClick={() => {
+                                  cardPhotoInputRefs.current
+                                    .get(inputKey)
+                                    ?.click();
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: "9px 12px",
+                                  borderRadius: "8px",
+                                  border: "1.5px dashed rgba(244,167,185,0.6)",
+                                  background: "rgba(244,167,185,0.06)",
+                                  fontFamily: "'Lora', Georgia, serif",
+                                  fontSize: "0.78rem",
+                                  color: "#D47A91",
+                                  cursor: "pointer",
+                                  transition:
+                                    "background 0.2s ease, border-color 0.2s ease",
+                                  textAlign: "center",
+                                  lineHeight: 1.4,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background =
+                                    "rgba(244,167,185,0.14)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background =
+                                    "rgba(244,167,185,0.06)";
+                                }}
+                              >
+                                {photo.src ? "📷 Replace" : "📷 Upload"}
+                              </button>
+                            </div>
+
+                            {/* URL input as secondary option */}
+                            <div>
+                              <label
+                                style={{
+                                  ...labelStyle,
+                                  fontSize: "0.67rem",
+                                  opacity: 0.75,
+                                }}
+                                htmlFor={urlInputId}
+                              >
+                                or paste URL
+                              </label>
+                              <input
+                                id={urlInputId}
+                                type="text"
+                                value={
+                                  photo.src.startsWith("blob:") ? "" : photo.src
+                                }
+                                onChange={(e) =>
+                                  updateCardPhoto(i, pi, e.target.value)
+                                }
+                                placeholder="https://..."
+                                style={{
+                                  ...inputStyle,
+                                  fontSize: "0.75rem",
+                                  padding: "6px 10px",
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
@@ -587,52 +785,104 @@ export default function EditPanel({
                 </div>
               )}
             </div>
+
+            {/* Sticky Save button at the bottom */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderTop: "1px solid rgba(244,167,185,0.2)",
+                position: "sticky",
+                bottom: 0,
+                background: "rgba(255,252,248,0.98)",
+                zIndex: 1,
+              }}
+            >
+              <button
+                type="button"
+                data-ocid="edit.save_button"
+                onClick={handleSave}
+                disabled={saveState === "saving"}
+                style={{
+                  width: "100%",
+                  padding: "13px 20px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: saveButtonBg,
+                  fontFamily: "'Lora', Georgia, serif",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#fff",
+                  cursor: saveState === "saving" ? "wait" : "pointer",
+                  transition:
+                    "background 0.3s ease, opacity 0.2s ease, transform 0.15s ease",
+                  boxShadow: "0 3px 16px rgba(212,122,145,0.35)",
+                  opacity: saveState === "saving" ? 0.8 : 1,
+                  letterSpacing: "0.02em",
+                }}
+                onMouseEnter={(e) => {
+                  if (saveState !== "saving") {
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 5px 20px rgba(212,122,145,0.45)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 3px 16px rgba(212,122,145,0.35)";
+                }}
+              >
+                {saveButtonLabel}
+              </button>
+            </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
-      {/* Floating open button */}
-      <button
-        type="button"
-        data-ocid="edit.open_modal_button"
-        onClick={() => setIsOpen(true)}
-        title="Edit this love card"
-        aria-label="Open edit panel"
-        style={{
-          position: "fixed",
-          bottom: "24px",
-          left: "24px",
-          width: "52px",
-          height: "52px",
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #C9B8D8 0%, #A894C0 100%)",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow:
-            "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)",
-          zIndex: 100,
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
-          color: "#fff",
-          fontSize: "1.2rem",
-          lineHeight: 1,
-          animation: "fadeIn 1s ease 2s both",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.1)";
-          e.currentTarget.style.boxShadow =
-            "0 6px 28px rgba(201,184,216,0.65), 0 3px 10px rgba(0,0,0,0.12)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-          e.currentTarget.style.boxShadow =
-            "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)";
-        }}
-      >
-        ✏️
-      </button>
+      {/* Floating open button — only shown when edit mode is unlocked */}
+      {isUnlocked && (
+        <button
+          type="button"
+          data-ocid="edit.open_modal_button"
+          onClick={() => setIsOpen(true)}
+          title="Edit this love card"
+          aria-label="Open edit panel"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            left: "24px",
+            width: "52px",
+            height: "52px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #C9B8D8 0%, #A894C0 100%)",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow:
+              "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)",
+            zIndex: 100,
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            color: "#fff",
+            fontSize: "1.2rem",
+            lineHeight: 1,
+            animation: "fadeIn 1s ease 2s both",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.1)";
+            e.currentTarget.style.boxShadow =
+              "0 6px 28px rgba(201,184,216,0.65), 0 3px 10px rgba(0,0,0,0.12)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow =
+              "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)";
+          }}
+        >
+          ✏️
+        </button>
+      )}
     </>
   );
 }

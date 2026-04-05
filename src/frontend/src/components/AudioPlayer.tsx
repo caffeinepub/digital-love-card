@@ -45,15 +45,20 @@ export default function AudioPlayer({ audioDataUrl }: AudioPlayerProps) {
     }
   }
 
-  if (!audioDataUrl) return null;
+  const hasAudio = !!audioDataUrl;
 
   return (
     <button
       type="button"
       data-ocid="audio.toggle"
-      onClick={handleToggle}
-      title={isPlaying ? "Pause music" : "Play music"}
-      aria-label={isPlaying ? "Pause music" : "Play music"}
+      onClick={hasAudio ? handleToggle : undefined}
+      title={
+        !hasAudio ? "No music added" : isPlaying ? "Pause music" : "Play music"
+      }
+      aria-label={
+        !hasAudio ? "No music added" : isPlaying ? "Pause music" : "Play music"
+      }
+      disabled={!hasAudio}
       className="music-btn"
       style={{
         position: "fixed",
@@ -62,32 +67,37 @@ export default function AudioPlayer({ audioDataUrl }: AudioPlayerProps) {
         width: "52px",
         height: "52px",
         borderRadius: "50%",
-        background: isPlaying
-          ? "linear-gradient(135deg, #F4A7B9 0%, #E8849A 100%)"
-          : "linear-gradient(135deg, #C9B8D8 0%, #A894C0 100%)",
+        background: !hasAudio
+          ? "linear-gradient(135deg, #c8c8c8 0%, #a8a8a8 100%)"
+          : isPlaying
+            ? "linear-gradient(135deg, #F4A7B9 0%, #E8849A 100%)"
+            : "linear-gradient(135deg, #C9B8D8 0%, #A894C0 100%)",
         border: "none",
-        cursor: "pointer",
+        cursor: hasAudio ? "pointer" : "default",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: isPlaying
-          ? "0 4px 20px rgba(244,167,185,0.5), 0 2px 8px rgba(0,0,0,0.1)"
-          : "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)",
+        boxShadow: !hasAudio
+          ? "0 4px 16px rgba(0,0,0,0.08)"
+          : isPlaying
+            ? "0 4px 20px rgba(244,167,185,0.5), 0 2px 8px rgba(0,0,0,0.1)"
+            : "0 4px 20px rgba(201,184,216,0.5), 0 2px 8px rgba(0,0,0,0.1)",
         zIndex: 100,
+        opacity: hasAudio ? 1 : 0.5,
         transition:
-          "transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease",
+          "transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, opacity 0.3s ease",
         color: "#fff",
         fontSize: "1.3rem",
         lineHeight: 1,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "scale(1.1)";
+        if (hasAudio) e.currentTarget.style.transform = "scale(1.1)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "scale(1)";
       }}
     >
-      {isPlaying ? (
+      {hasAudio && isPlaying ? (
         // Pause icon (two bars)
         <svg
           width="18"
@@ -101,7 +111,7 @@ export default function AudioPlayer({ audioDataUrl }: AudioPlayerProps) {
           <rect x="14" y="4" width="4" height="16" rx="1" />
         </svg>
       ) : (
-        // Musical note icon
+        // Musical note icon (shown when paused OR no audio)
         <svg
           width="20"
           height="20"

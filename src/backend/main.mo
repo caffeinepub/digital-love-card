@@ -1,80 +1,184 @@
-import Text "mo:core/Text";
-import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
+import Text "mo:core/Text";
+import Storage "blob-storage/Storage";
+
+import MixinStorage "blob-storage/Mixin";
+
 
 actor {
-  public type LoveReasonCard = {
+  include MixinStorage();
+
+  public type LoveCard = {
     title : Text;
     description : Text;
+    photos : [{ src : Text; rotation : Int }];
   };
 
-  public type PhotoCaptions = {
-    berlinMuseum : Text;
-    firstBerlinPhoto : Text;
-    romeColosseum : Text;
-    daughterPhotos : Text;
-    winterGarden : Text;
-    hamptonsNight : Text;
-    graduation : Text;
+  public type GalleryPhoto = {
+    src : Text;
+    caption : Text;
+    rotation : Int;
+    size : Nat;
+    top : Nat;
+    left : Nat;
+    zIndex : Nat;
   };
 
   public type CardContent = {
-    loveLetter : Text;
-    reasonCards : [LoveReasonCard];
-    photoCaptions : PhotoCaptions;
+    letterText : Text;
+    loveCards : [LoveCard];
+    galleryPhotos : [GalleryPhoto];
+    audioFileName : Text;
+    uploadedImages : [Storage.ExternalBlob];
+    uploadedAudio : [Storage.ExternalBlob];
   };
 
-  let loveLetter = "Dear Karla, you are a truly amazing person and the light of my life. I love you because you are kind, caring and supportive. Thank you for everything!";
-
-  let reasonCards : [LoveReasonCard] = [
+  // Default content function
+  func defaultContent() : CardContent {
     {
-      title = "Intelligence";
-      description = "Your intelligence and quick thinking never cease to impress me. Whether it\'s finding solutions to problems or learning new things, you always excel.";
-    },
-    {
-      title = "Kindness";
-      description = "You are incredibly caring and always put others before yourself. Your compassion and empathy for others truly make you a wonderful partner.";
-    },
-    {
-      title = "Sense of Humor";
-      description = "Your sense of humor is infectious. You can always make me laugh, even when I’m having a bad day.";
-    },
-  ];
-
-  let photoCaptions : PhotoCaptions = {
-    berlinMuseum = "Cuddly moment at the Berlin museum";
-    firstBerlinPhoto = "Baby’s first Berlin photo";
-    romeColosseum = "Unforgettable trip to Rome, Italy";
-    daughterPhotos = "Our daughter throughout the seasons";
-    winterGarden = "Having fun at the Winter Garden";
-    hamptonsNight = "Beautiful night in the Hamptons";
-    graduation = "Celebrating your graduation";
+      letterText = "Write your love letter here…";
+      loveCards = [
+        {
+          title = "The Way You Care";
+          description = "Write your description here…";
+          photos = [];
+        },
+        {
+          title = "Your Smile";
+          description = "Write your description here…";
+          photos = [];
+        },
+        {
+          title = "How You Hold Me";
+          description = "Write your description here…";
+          photos = [];
+        },
+      ];
+      galleryPhotos = [];
+      audioFileName = "";
+      uploadedImages = [];
+      uploadedAudio = [];
+    };
   };
 
-  let cardContent = {
-    loveLetter;
-    reasonCards;
-    photoCaptions;
+  var content : ?CardContent = null;
+
+  public shared ({ caller }) func getContent() : async CardContent {
+    switch (content) {
+      case (?existingContent) { existingContent };
+      case (null) { defaultContent() };
+    };
   };
 
-  public query ({ caller }) func getLoveLetter() : async Text {
-    loveLetter;
+  public shared ({ caller }) func saveContent(newContent : CardContent) : async () {
+    content := ?newContent;
   };
 
-  public query ({ caller }) func getReasonCard(index : Nat) : async LoveReasonCard {
-    if (index >= reasonCards.size()) { Runtime.trap("Index out of bounds") };
-    reasonCards[index];
+  public shared ({ caller }) func addImage(blob : Storage.ExternalBlob) : async () {
+    switch (content) {
+      case (?existingContent) {
+        let updatedImages = existingContent.uploadedImages.concat([blob]);
+        let updatedContent = {
+          existingContent with
+          uploadedImages = updatedImages
+        };
+        content := ?updatedContent;
+      };
+      case (null) {};
+    };
   };
 
-  public query ({ caller }) func getAllReasonCards() : async [LoveReasonCard] {
-    reasonCards;
+  public shared ({ caller }) func addAudio(blob : Storage.ExternalBlob) : async () {
+    switch (content) {
+      case (?existingContent) {
+        let updatedAudio = existingContent.uploadedAudio.concat([blob]);
+        let updatedContent = {
+          existingContent with
+          uploadedAudio = updatedAudio
+        };
+        content := ?updatedContent;
+      };
+      case (null) {};
+    };
   };
 
-  public query ({ caller }) func getPhotoCaptions() : async PhotoCaptions {
-    photoCaptions;
+  public shared ({ caller }) func getImage(index : Nat) : async ?Storage.ExternalBlob {
+    switch (content) {
+      case (?existingContent) {
+        if (index < existingContent.uploadedImages.size()) {
+          ?existingContent.uploadedImages[index];
+        } else {
+          null;
+        };
+      };
+      case (null) { null };
+    };
   };
 
-  public query ({ caller }) func getCardContent() : async CardContent {
-    cardContent;
+  public shared ({ caller }) func getAudio(index : Nat) : async ?Storage.ExternalBlob {
+    switch (content) {
+      case (?existingContent) {
+        if (index < existingContent.uploadedAudio.size()) {
+          ?existingContent.uploadedAudio[index];
+        } else {
+          null;
+        };
+      };
+      case (null) { null };
+    };
+  };
+
+  public shared ({ caller }) func replaceImage(index : Nat, blob : Storage.ExternalBlob) : async Bool {
+    switch (content) {
+      case (?existingContent) {
+        if (index < existingContent.uploadedImages.size()) {
+          let images = existingContent.uploadedImages.toVarArray();
+          images[index] := blob;
+          let updatedContent = {
+            existingContent with
+            uploadedImages = images.toArray();
+          };
+          content := ?updatedContent;
+          true;
+        } else {
+          false;
+        };
+      };
+      case (null) { false };
+    };
+  };
+
+  public shared ({ caller }) func replaceAudio(index : Nat, blob : Storage.ExternalBlob) : async Bool {
+    switch (content) {
+      case (?existingContent) {
+        if (index < existingContent.uploadedAudio.size()) {
+          let audioFiles = existingContent.uploadedAudio.toVarArray();
+          audioFiles[index] := blob;
+          let updatedContent = {
+            existingContent with
+            uploadedAudio = audioFiles.toArray();
+          };
+          content := ?updatedContent;
+          true;
+        } else {
+          false;
+        };
+      };
+      case (null) { false };
+    };
+  };
+
+  public shared ({ caller }) func listImages() : async [Storage.ExternalBlob] {
+    switch (content) {
+      case (?existingContent) { existingContent.uploadedImages };
+      case (null) { [] };
+    };
+  };
+
+  public shared ({ caller }) func listAudio() : async [Storage.ExternalBlob] {
+    switch (content) {
+      case (?existingContent) { existingContent.uploadedAudio };
+      case (null) { [] };
+    };
   };
 };

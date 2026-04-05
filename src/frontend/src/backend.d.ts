@@ -7,28 +7,47 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface LoveReasonCard {
+export class ExternalBlob {
+    getBytes(): Promise<Uint8Array<ArrayBuffer>>;
+    getDirectURL(): string;
+    static fromURL(url: string): ExternalBlob;
+    static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
+    withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
+}
+export interface GalleryPhoto {
+    src: string;
+    top: bigint;
+    rotation: bigint;
+    zIndex: bigint;
+    left: bigint;
+    size: bigint;
+    caption: string;
+}
+export interface LoveCard {
     title: string;
     description: string;
+    photos: Array<{
+        src: string;
+        rotation: bigint;
+    }>;
 }
 export interface CardContent {
-    loveLetter: string;
-    photoCaptions: PhotoCaptions;
-    reasonCards: Array<LoveReasonCard>;
-}
-export interface PhotoCaptions {
-    graduation: string;
-    winterGarden: string;
-    daughterPhotos: string;
-    berlinMuseum: string;
-    hamptonsNight: string;
-    romeColosseum: string;
-    firstBerlinPhoto: string;
+    loveCards: Array<LoveCard>;
+    letterText: string;
+    uploadedImages: Array<ExternalBlob>;
+    audioFileName: string;
+    uploadedAudio: Array<ExternalBlob>;
+    galleryPhotos: Array<GalleryPhoto>;
 }
 export interface backendInterface {
-    getAllReasonCards(): Promise<Array<LoveReasonCard>>;
-    getCardContent(): Promise<CardContent>;
-    getLoveLetter(): Promise<string>;
-    getPhotoCaptions(): Promise<PhotoCaptions>;
-    getReasonCard(index: bigint): Promise<LoveReasonCard>;
+    addAudio(blob: ExternalBlob): Promise<void>;
+    addImage(blob: ExternalBlob): Promise<void>;
+    getAudio(index: bigint): Promise<ExternalBlob | null>;
+    getContent(): Promise<CardContent>;
+    getImage(index: bigint): Promise<ExternalBlob | null>;
+    listAudio(): Promise<Array<ExternalBlob>>;
+    listImages(): Promise<Array<ExternalBlob>>;
+    replaceAudio(index: bigint, blob: ExternalBlob): Promise<boolean>;
+    replaceImage(index: bigint, blob: ExternalBlob): Promise<boolean>;
+    saveContent(newContent: CardContent): Promise<void>;
 }

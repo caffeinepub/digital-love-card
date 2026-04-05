@@ -11,26 +11,65 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface CardContent {
-  'loveLetter' : string,
-  'photoCaptions' : PhotoCaptions,
-  'reasonCards' : Array<LoveReasonCard>,
+  'loveCards' : Array<LoveCard>,
+  'letterText' : string,
+  'uploadedImages' : Array<ExternalBlob>,
+  'audioFileName' : string,
+  'uploadedAudio' : Array<ExternalBlob>,
+  'galleryPhotos' : Array<GalleryPhoto>,
 }
-export interface LoveReasonCard { 'title' : string, 'description' : string }
-export interface PhotoCaptions {
-  'graduation' : string,
-  'winterGarden' : string,
-  'daughterPhotos' : string,
-  'berlinMuseum' : string,
-  'hamptonsNight' : string,
-  'romeColosseum' : string,
-  'firstBerlinPhoto' : string,
+export type ExternalBlob = Uint8Array;
+export interface GalleryPhoto {
+  'src' : string,
+  'top' : bigint,
+  'rotation' : bigint,
+  'zIndex' : bigint,
+  'left' : bigint,
+  'size' : bigint,
+  'caption' : string,
+}
+export interface LoveCard {
+  'title' : string,
+  'description' : string,
+  'photos' : Array<{ 'src' : string, 'rotation' : bigint }>,
+}
+export interface _CaffeineStorageCreateCertificateResult {
+  'method' : string,
+  'blob_hash' : string,
+}
+export interface _CaffeineStorageRefillInformation {
+  'proposed_top_up_amount' : [] | [bigint],
+}
+export interface _CaffeineStorageRefillResult {
+  'success' : [] | [boolean],
+  'topped_up_amount' : [] | [bigint],
 }
 export interface _SERVICE {
-  'getAllReasonCards' : ActorMethod<[], Array<LoveReasonCard>>,
-  'getCardContent' : ActorMethod<[], CardContent>,
-  'getLoveLetter' : ActorMethod<[], string>,
-  'getPhotoCaptions' : ActorMethod<[], PhotoCaptions>,
-  'getReasonCard' : ActorMethod<[bigint], LoveReasonCard>,
+  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
+  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+    [Array<Uint8Array>],
+    undefined
+  >,
+  '_caffeineStorageCreateCertificate' : ActorMethod<
+    [string],
+    _CaffeineStorageCreateCertificateResult
+  >,
+  '_caffeineStorageRefillCashier' : ActorMethod<
+    [[] | [_CaffeineStorageRefillInformation]],
+    _CaffeineStorageRefillResult
+  >,
+  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  'addAudio' : ActorMethod<[ExternalBlob], undefined>,
+  'addImage' : ActorMethod<[ExternalBlob], undefined>,
+  'getAudio' : ActorMethod<[bigint], [] | [ExternalBlob]>,
+  'getContent' : ActorMethod<[], CardContent>,
+  'getImage' : ActorMethod<[bigint], [] | [ExternalBlob]>,
+  'listAudio' : ActorMethod<[], Array<ExternalBlob>>,
+  'listImages' : ActorMethod<[], Array<ExternalBlob>>,
+  'replaceAudio' : ActorMethod<[bigint, ExternalBlob], boolean>,
+  'replaceImage' : ActorMethod<[bigint, ExternalBlob], boolean>,
+  'saveContent' : ActorMethod<[CardContent], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
