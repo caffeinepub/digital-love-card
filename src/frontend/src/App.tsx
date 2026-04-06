@@ -13,6 +13,8 @@ import LiveTimer from "./components/LiveTimer";
 import MemoryBed from "./components/MemoryBed";
 import OrnamDivider from "./components/OrnamDivider";
 import PolaroidGallery2 from "./components/PolaroidGallery2";
+import RibbonDivider from "./components/RibbonDivider";
+import SlidePuzzle from "./components/SlidePuzzle";
 import StarCanvas from "./components/StarCanvas";
 import VinylSection from "./components/VinylSection";
 import { useAnnivContent } from "./hooks/useAnnivContent";
@@ -36,6 +38,7 @@ export default function App() {
     uploadSongAudio,
     uploadSongCover,
     setSongTitle,
+    uploadPuzzleImage,
     saveToBackend,
   } = useAnnivContent();
 
@@ -134,6 +137,8 @@ export default function App() {
           editMode={editUnlocked}
         />
         <VinylSection songs={content.songs} editMode={editUnlocked} />
+        <RibbonDivider />
+        <SlidePuzzle puzzleImageUrl={content.puzzleImageUrl} />
         <AnniversaryFinal />
       </main>
 
@@ -221,6 +226,8 @@ export default function App() {
         uploadSongAudio={uploadSongAudio}
         uploadSongCover={uploadSongCover}
         setSongTitle={setSongTitle}
+        puzzleImageUrl={content.puzzleImageUrl}
+        uploadPuzzleImage={uploadPuzzleImage}
       />
     </>
   );

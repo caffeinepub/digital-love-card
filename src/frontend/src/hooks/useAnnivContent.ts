@@ -51,6 +51,7 @@ export interface AnnivContent {
   treasuresImageUrl: string;
   subtexts: SubtextContent;
   songs: SongItem[];
+  puzzleImageUrl: string;
 }
 
 const TOTAL_POLAROIDS = 20;
@@ -77,6 +78,7 @@ const DEFAULT_CONTENT: AnnivContent = {
     coverUrl: "",
     title: "",
   })),
+  puzzleImageUrl: "",
 };
 
 /**
@@ -88,6 +90,7 @@ const DEFAULT_CONTENT: AnnivContent = {
  * uploadedImages[23]      = bouquet image
  * uploadedImages[24]      = little treasures image
  * uploadedImages[25..30]  = song cover images 0-5
+ * uploadedImages[31]      = puzzle image
  */
 export function useAnnivContent() {
   const { actor, isFetching } = useActor();
@@ -120,6 +123,10 @@ export function useAnnivContent() {
   const pendingSongCoverRef = useRef<
     Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
   >(new Map());
+  const pendingPuzzleImageRef = useRef<{
+    bytes: Uint8Array<ArrayBuffer>;
+    fileName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!actor || isFetching) return;
@@ -206,6 +213,9 @@ export function useAnnivContent() {
           }
         }
 
+        // puzzle image: slot 31
+        const puzzleImageUrl = imgs[31] ? imgs[31].getDirectURL() : "";
+
         if (!cancelled) {
           setContent({
             poems,
@@ -218,6 +228,7 @@ export function useAnnivContent() {
             treasuresImageUrl,
             subtexts,
             songs,
+            puzzleImageUrl,
           });
         }
       } catch {
@@ -377,6 +388,15 @@ export function useAnnivContent() {
     });
   }
 
+  function uploadPuzzleImage(
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) {
+    pendingPuzzleImageRef.current = { bytes, fileName };
+    setContent((prev) => ({ ...prev, puzzleImageUrl: previewUrl }));
+  }
+
   async function saveToBackend(): Promise<void> {
     if (!actor) throw new Error("Actor not ready");
 
@@ -503,6 +523,17 @@ export function useAnnivContent() {
       pendingSongCoverRef.current = new Map();
     }
 
+    // Slot 31: puzzle image
+    if (pendingPuzzleImageRef.current) {
+      await ensureSlotAndUpload(31, pendingPuzzleImageRef.current.bytes);
+      if (uploadedImages[31])
+        setContent((prev) => ({
+          ...prev,
+          puzzleImageUrl: uploadedImages[31].getDirectURL(),
+        }));
+      pendingPuzzleImageRef.current = null;
+    }
+
     // Songs audio URLs and titles are stored in JSON letterText
     const poemsJson = JSON.stringify({
       poems: content.poems,
@@ -548,6 +579,7 @@ export function useAnnivContent() {
     uploadSongAudio,
     uploadSongCover,
     setSongTitle,
+    uploadPuzzleImage,
     saveToBackend,
   };
 }

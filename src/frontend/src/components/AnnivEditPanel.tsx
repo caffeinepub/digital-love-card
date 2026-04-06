@@ -86,6 +86,12 @@ interface AnnivEditPanelProps {
     previewUrl: string,
   ) => void;
   setSongTitle: (index: number, title: string) => void;
+  puzzleImageUrl: string;
+  uploadPuzzleImage: (
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
 }
 
 type TabId =
@@ -95,7 +101,8 @@ type TabId =
   | "bench"
   | "photos"
   | "music"
-  | "songs";
+  | "songs"
+  | "puzzle";
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: "poems", label: "Poems" },
@@ -105,6 +112,7 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: "photos", label: "Photos" },
   { id: "music", label: "Music" },
   { id: "songs", label: "Songs" },
+  { id: "puzzle", label: "Puzzle" },
 ];
 
 export const UNLOCK_TAPS = 5;
@@ -153,6 +161,8 @@ export default function AnnivEditPanel({
   uploadSongAudio,
   uploadSongCover,
   setSongTitle,
+  puzzleImageUrl,
+  uploadPuzzleImage,
 }: AnnivEditPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("poems");
@@ -164,6 +174,7 @@ export default function AnnivEditPanel({
   const audioInputRef = React.useRef<HTMLInputElement>(null);
   const bouquetInputRef = React.useRef<HTMLInputElement>(null);
   const treasuresInputRef = React.useRef<HTMLInputElement>(null);
+  const puzzleInputRef = React.useRef<HTMLInputElement>(null);
   const polaroidInputRefs = React.useRef<Map<number, HTMLInputElement>>(
     new Map(),
   );
@@ -1261,6 +1272,88 @@ export default function AnnivEditPanel({
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* ---- Puzzle Tab ---- */}
+              {activeTab === "puzzle" && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.78rem",
+                      color: "#3a5a40",
+                      margin: 0,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Puzzle Image
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.78rem",
+                      color: "#7a9e7e",
+                      margin: 0,
+                      fontStyle: "italic",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Upload the image that will be used as the puzzle. A square
+                    photo works best ✨
+                  </p>
+
+                  <input
+                    ref={puzzleInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, uploadPuzzleImage)}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    data-ocid="edit.puzzle.upload_button"
+                    onClick={() => puzzleInputRef.current?.click()}
+                    style={{ ...uploadButtonStyle, padding: "16px" }}
+                  >
+                    {puzzleImageUrl ? (
+                      <>
+                        <img
+                          src={puzzleImageUrl}
+                          alt="Current puzzle"
+                          style={{
+                            width: "72px",
+                            height: "72px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        Replace puzzle photo
+                      </>
+                    ) : (
+                      <>🧩 Upload puzzle photo</>
+                    )}
+                  </button>
+
+                  <p
+                    style={{
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.72rem",
+                      color: "#7a9e7e",
+                      margin: 0,
+                      fontStyle: "italic",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    After uploading, tap Save changes so it appears when others
+                    view the page.
+                  </p>
                 </div>
               )}
             </div>

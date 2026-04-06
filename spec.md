@@ -1,85 +1,40 @@
-# Anniversary Love Page
+# Anniversary Love Page — Slide Puzzle Section
 
 ## Current State
-The anniversary website has these sections in order:
-- Header (date)
-- LiveTimer
-- BouquetSection
-- FenceDivider
-- GameSection (dice + board game)
-- BenchScene
-- MemoryBed (Little Treasures)
-- OrnamDivider
-- PolaroidGallery2
-- AnniversaryFinal (finale / HAPPY ONE YEAR ANNIVERSARY)
-
-Edit panel has 6 tabs: Poems, Bouquet, Treasures, Bench, Photos, Music.
-
-Content stored via `useAnnivContent` hook. Images stored in image slots:
-- Slot 0: board game
-- Slot 1: bench image
-- Slot 2: unused
-- Slots 3-22: polaroids 0-19
-- Slot 23: bouquet
-- Slot 24: little treasures
-
-Text content saved as JSON in `letterText` field.
+- The anniversary website has sections: Header, LiveTimer, BouquetSection, FenceDivider, GameSection, BenchScene, MemoryBed, OrnamDivider, PolaroidGallery2, VinylSection, AnniversaryFinal.
+- VinylSection ("Our Songs") appears just before AnniversaryFinal.
+- Content is managed via `useAnnivContent` hook with image slots 0-30 used. Next free image slot is 31.
+- Edit panel (AnnivEditPanel) has tabs: poems, bouquet, treasures, bench, photos, music, songs — displayed in a 2-row grid.
+- All customizations persist to backend via `saveToBackend()`.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **VinylPlayer section** — new section placed between PolaroidGallery2 and AnniversaryFinal
-  - Title: "Our Songs"
-  - 6 vinyl players in a 3-column × 2-row grid
-  - Each vinyl: spinning disc animation (CSS keyframe), black outer grooves ring, center circle replaced with the song cover image (if uploaded)
-  - Click a vinyl to toggle play/pause; audio plays inline via HTML5 `<audio>` tag
-  - Only one vinyl plays at a time (clicking another pauses the current one)
-  - Vinyl spins while audio is playing, pauses spin when paused
-  - Default center circle: dark gradient pattern (no cover)
-- **Songs tab** in edit panel (7th tab — add to the existing 6-tab grid, making it a 3+4 or scroll, or expand to 7 total)
-  - 6 song slots, each slot has:
-    - Audio upload (file) — supports mp3, mp4, m4a, ogg
-    - Cover image upload (file)
-    - Song title (text input, shown below vinyl)
-  - Song data stored per-slot
+1. **RibbonDivider component** — A decorative rose-gold ribbon SVG divider to separate the VinylSection from the new PuzzleSection.
+2. **SlidePuzzle component** — A 4×4 slide puzzle (15 tiles + 1 empty = 16 tiles) encased in a wooden box frame.
+   - Default placeholder shows a romantic/floral image or message when no custom image is set.
+   - The puzzle image is fully customizable via the edit panel (Puzzle tab).
+   - Puzzle image upload is stored in image slot 31 in the backend.
+   - Title: "we'll always fix us piece by piece" displayed above/below the wooden box.
+   - Puzzle gameplay: tiles are shuffled on load; clicking a tile adjacent to the empty space slides it into place.
+   - Win state: show a gentle celebration animation and message when puzzle is solved.
+3. **Puzzle tab in AnnivEditPanel** — New tab "puzzle" with an image upload slot for the puzzle image.
+4. **puzzleImageUrl** added to `AnnivContent` interface and `useAnnivContent` hook.
+   - Image stored in slot 31.
+   - `uploadPuzzleImage` function added to hook.
+   - Persisted in `saveToBackend` at slot 31.
 
 ### Modify
-- `useAnnivContent` hook:
-  - Add `songs: SongItem[]` to `AnnivContent` (6 items)
-  - `SongItem`: `{ audioUrl: string; coverUrl: string; title: string }`
-  - Add image slots 25-30 for song cover images (6 songs)
-  - Add audio slots: use a separate list (re-use listAudio with index offset, or store audio URLs in `letterText` JSON)
-  - Expose `uploadSongAudio`, `uploadSongCover`, `setSongTitle` functions
-  - Persist songs in `letterText` JSON (titles + audio data URLs) and image slots 25-30 (covers)
-- `AnnivEditPanel`:
-  - Add `songs` tab to TAB_LABELS (7 tabs total — make tab grid `repeat(4, 1fr)` for row 1 and `repeat(3, 1fr)` for row 2, or simpler: use `repeat(4, 1fr)` grid with wrap)
-  - Add Songs tab content: 6 song slots with audio upload, cover upload, and title input
-- `App.tsx`:
-  - Import and render `VinylSection` between `PolaroidGallery2` and `AnniversaryFinal`
-  - Pass songs content and edit props
+- `App.tsx`: Add `RibbonDivider` and `SlidePuzzle` between `VinylSection` and `AnniversaryFinal`. Wire up `puzzleImageUrl` and `uploadPuzzleImage`.
+- `useAnnivContent.ts`: Add `puzzleImageUrl` to `AnnivContent`, `DEFAULT_CONTENT`, load from slot 31, add `uploadPuzzleImage` function, save to slot 31 in `saveToBackend`.
+- `AnnivEditPanel.tsx`: Add "puzzle" tab to `TabId` union and `TAB_LABELS`. Add upload UI in the puzzle tab.
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-1. Create `VinylSection.tsx` component:
-   - CSS spinning animation via inline `<style>` or CSS vars
-   - Each vinyl rendered as SVG-inspired CSS circles: outer ring (black/dark grooves), center circle with cover image or gradient
-   - Click handler toggles play/pause per vinyl
-   - Uses a single `currentlyPlaying` state index (null = none playing)
-   - `<audio>` elements for each song (ref array)
-   - Song title below each vinyl
-2. Update `useAnnivContent`:
-   - Add `SongItem` interface
-   - Add `songs` array to `AnnivContent` (6 default empty slots)
-   - Store song covers in image slots 25-30
-   - Store song audio URLs and titles in `letterText` JSON
-   - Store song audio as uploaded audio blobs (use multiple audio slots or encode as base64 in letterText for small files — use blob storage for audio, separate audio slot per song)
-   - Expose upload and setter functions
-3. Update `AnnivEditPanel`:
-   - Add `songs` tab (7th tab, adjust grid)
-   - Add song editing UI in Songs tab content area
-4. Update `App.tsx`:
-   - Import VinylSection
-   - Pass songs data and handlers
-   - Pass songs props to AnnivEditPanel
+1. Create `src/frontend/src/components/RibbonDivider.tsx` — rose gold ribbon SVG, full-width, centered.
+2. Create `src/frontend/src/components/SlidePuzzle.tsx` — 4×4 slide puzzle in a wooden box frame, with title, gameplay, win state, and customizable image.
+3. Update `src/frontend/src/hooks/useAnnivContent.ts` — add `puzzleImageUrl`, `uploadPuzzleImage`, slot 31 read/write.
+4. Update `src/frontend/src/components/AnnivEditPanel.tsx` — add puzzle tab with image upload.
+5. Update `src/frontend/src/App.tsx` — insert RibbonDivider + SlidePuzzle between VinylSection and AnniversaryFinal, wire props.
