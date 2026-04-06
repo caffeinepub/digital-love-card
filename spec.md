@@ -1,38 +1,85 @@
-# Digital Love Card
+# Anniversary Love Page
 
 ## Current State
-- Single-page love card with three sections: LoveLetterSection, ThingsILoveSection, PolaroidGallery.
-- LoveLetterSection: hardcoded letter paragraphs and closing signature in `LETTER_PARAGRAPHS` array.
-- ThingsILoveSection: hardcoded card titles, descriptions, and photo sources in `LOVE_CARDS` array.
-- MusicPlayer: plays a hardcoded MP3 URL from SoundHelix; no way for the user to change the music.
-- PolaroidGallery: 9 polaroids scattered across a fixed 960×940px canvas with wide spacing; photos and captions are hardcoded.
-- No in-app editing capability — all content is compile-time constants.
+The anniversary website has these sections in order:
+- Header (date)
+- LiveTimer
+- BouquetSection
+- FenceDivider
+- GameSection (dice + board game)
+- BenchScene
+- MemoryBed (Little Treasures)
+- OrnamDivider
+- PolaroidGallery2
+- AnniversaryFinal (finale / HAPPY ONE YEAR ANNIVERSARY)
+
+Edit panel has 6 tabs: Poems, Bouquet, Treasures, Bench, Photos, Music.
+
+Content stored via `useAnnivContent` hook. Images stored in image slots:
+- Slot 0: board game
+- Slot 1: bench image
+- Slot 2: unused
+- Slots 3-22: polaroids 0-19
+- Slot 23: bouquet
+- Slot 24: little treasures
+
+Text content saved as JSON in `letterText` field.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Edit Mode Panel**: A floating "Edit" button (pencil icon, bottom-left corner) toggles a slide-in settings drawer/panel.
-- **Letter editor**: Inside the panel, a textarea for the full love letter message (paragraphs separated by blank lines). Changes reflect live in LoveLetterSection.
-- **Love cards editor**: Inside the panel, fields to edit the title, description, and photo URL for each of the 3 love cards in ThingsILoveSection.
-- **Spotify embed editor**: Inside the panel, a text input for a Spotify track/playlist link. The app converts a standard Spotify URL (`https://open.spotify.com/track/ID` or `/playlist/ID`) into the Spotify embed iframe URL and renders it in a fixed bottom-right panel (replacing the current audio player button). Still include mute/unmute or show/hide toggle for the embed.
-- **Gallery photo editor**: Inside the panel, inputs to edit the photo URL and caption for each of the 9 polaroid gallery photos.
-- **Persist edits in localStorage**: All edited content is saved to localStorage so it survives page refresh.
+- **VinylPlayer section** — new section placed between PolaroidGallery2 and AnniversaryFinal
+  - Title: "Our Songs"
+  - 6 vinyl players in a 3-column × 2-row grid
+  - Each vinyl: spinning disc animation (CSS keyframe), black outer grooves ring, center circle replaced with the song cover image (if uploaded)
+  - Click a vinyl to toggle play/pause; audio plays inline via HTML5 `<audio>` tag
+  - Only one vinyl plays at a time (clicking another pauses the current one)
+  - Vinyl spins while audio is playing, pauses spin when paused
+  - Default center circle: dark gradient pattern (no cover)
+- **Songs tab** in edit panel (7th tab — add to the existing 6-tab grid, making it a 3+4 or scroll, or expand to 7 total)
+  - 6 song slots, each slot has:
+    - Audio upload (file) — supports mp3, mp4, m4a, ogg
+    - Cover image upload (file)
+    - Song title (text input, shown below vinyl)
+  - Song data stored per-slot
 
 ### Modify
-- **PolaroidGallery layout**: Reduce spacing between polaroids so they cluster more tightly — decrease `left` offsets so photos overlap more (by ~30–50px more than current), and bring the middle/bottom rows closer to the top row. Target a canvas height of ~700px instead of 900px.
-- **MusicPlayer**: Replace the current `<audio>` element approach with a Spotify embed iframe. The iframe renders in a small fixed panel (bottom-right). Include a toggle button to show/hide the Spotify player panel. If no Spotify URL is set, show a placeholder prompt.
+- `useAnnivContent` hook:
+  - Add `songs: SongItem[]` to `AnnivContent` (6 items)
+  - `SongItem`: `{ audioUrl: string; coverUrl: string; title: string }`
+  - Add image slots 25-30 for song cover images (6 songs)
+  - Add audio slots: use a separate list (re-use listAudio with index offset, or store audio URLs in `letterText` JSON)
+  - Expose `uploadSongAudio`, `uploadSongCover`, `setSongTitle` functions
+  - Persist songs in `letterText` JSON (titles + audio data URLs) and image slots 25-30 (covers)
+- `AnnivEditPanel`:
+  - Add `songs` tab to TAB_LABELS (7 tabs total — make tab grid `repeat(4, 1fr)` for row 1 and `repeat(3, 1fr)` for row 2, or simpler: use `repeat(4, 1fr)` grid with wrap)
+  - Add Songs tab content: 6 song slots with audio upload, cover upload, and title input
+- `App.tsx`:
+  - Import and render `VinylSection` between `PolaroidGallery2` and `AnniversaryFinal`
+  - Pass songs content and edit props
 
 ### Remove
-- Hardcoded `MUSIC_URL` constant and `<audio>` element from MusicPlayer.
-- Hardcoded `LETTER_PARAGRAPHS` (move to editable state with localStorage default).
-- Hardcoded `LOVE_CARDS` data (move to editable state with localStorage default).
-- Hardcoded `GALLERY_PHOTOS` data (move to editable state with localStorage default).
+- Nothing removed
 
 ## Implementation Plan
-1. Create a `useEditableContent` custom hook that manages all editable state (letter text, love cards, gallery photos, Spotify URL) with localStorage persistence.
-2. Create an `EditPanel` component — a slide-in drawer triggered by a floating pencil button (bottom-left). Contains tabbed or scrollable sections for: Letter, Cards, Music, Gallery.
-3. Update `LoveLetterSection` to accept letter paragraphs as a prop (array of strings split from the textarea value).
-4. Update `ThingsILoveSection` to accept love cards as a prop.
-5. Update `PolaroidGallery` to accept gallery photos as a prop. Tighten the `left` pixel offsets so photos are ~40px closer to each other; reduce canvas height to ~700px.
-6. Replace `MusicPlayer` with a `SpotifyPlayer` component that renders a Spotify embed iframe in a small fixed panel, with a toggle button. Accepts a Spotify URL prop; converts it to the embed format.
-7. Wire everything together in `App.tsx` using the shared `useEditableContent` hook.
+1. Create `VinylSection.tsx` component:
+   - CSS spinning animation via inline `<style>` or CSS vars
+   - Each vinyl rendered as SVG-inspired CSS circles: outer ring (black/dark grooves), center circle with cover image or gradient
+   - Click handler toggles play/pause per vinyl
+   - Uses a single `currentlyPlaying` state index (null = none playing)
+   - `<audio>` elements for each song (ref array)
+   - Song title below each vinyl
+2. Update `useAnnivContent`:
+   - Add `SongItem` interface
+   - Add `songs` array to `AnnivContent` (6 default empty slots)
+   - Store song covers in image slots 25-30
+   - Store song audio URLs and titles in `letterText` JSON
+   - Store song audio as uploaded audio blobs (use multiple audio slots or encode as base64 in letterText for small files — use blob storage for audio, separate audio slot per song)
+   - Expose upload and setter functions
+3. Update `AnnivEditPanel`:
+   - Add `songs` tab (7th tab, adjust grid)
+   - Add song editing UI in Songs tab content area
+4. Update `App.tsx`:
+   - Import VinylSection
+   - Pass songs data and handlers
+   - Pass songs props to AnnivEditPanel

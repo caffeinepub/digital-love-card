@@ -9,6 +9,12 @@ export interface PolaroidItem {
   rotation: number;
 }
 
+export interface SongItem {
+  audioUrl: string;
+  coverUrl: string;
+  title: string;
+}
+
 export interface SubtextContent {
   // Bouquet section
   bouquetHeading: string;
@@ -44,6 +50,7 @@ export interface AnnivContent {
   bouquetImageUrl: string;
   treasuresImageUrl: string;
   subtexts: SubtextContent;
+  songs: SongItem[];
 }
 
 const TOTAL_POLAROIDS = 20;
@@ -65,6 +72,11 @@ const DEFAULT_CONTENT: AnnivContent = {
   bouquetImageUrl: "",
   treasuresImageUrl: "",
   subtexts: { ...DEFAULT_SUBTEXTS },
+  songs: Array.from({ length: 6 }, () => ({
+    audioUrl: "",
+    coverUrl: "",
+    title: "",
+  })),
 };
 
 /**
@@ -75,6 +87,7 @@ const DEFAULT_CONTENT: AnnivContent = {
  * uploadedImages[3..22]   = polaroids 0-19
  * uploadedImages[23]      = bouquet image
  * uploadedImages[24]      = little treasures image
+ * uploadedImages[25..30]  = song cover images 0-5
  */
 export function useAnnivContent() {
   const { actor, isFetching } = useActor();
@@ -104,6 +117,9 @@ export function useAnnivContent() {
     bytes: Uint8Array<ArrayBuffer>;
     fileName: string;
   } | null>(null);
+  const pendingSongCoverRef = useRef<
+    Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+  >(new Map());
 
   useEffect(() => {
     if (!actor || isFetching) return;
@@ -116,6 +132,11 @@ export function useAnnivContent() {
 
         let poems = [...DEFAULT_POEMS];
         let subtexts = { ...DEFAULT_SUBTEXTS };
+        let songs: SongItem[] = Array.from({ length: 6 }, () => ({
+          audioUrl: "",
+          coverUrl: "",
+          title: "",
+        }));
 
         if (backendContent.letterText) {
           try {
@@ -129,6 +150,14 @@ export function useAnnivContent() {
             }
             if (parsed.subtexts) {
               subtexts = { ...DEFAULT_SUBTEXTS, ...parsed.subtexts };
+            }
+            if (parsed.songs && Array.isArray(parsed.songs)) {
+              parsed.songs.forEach((s: Partial<SongItem>, i: number) => {
+                if (i < 6) {
+                  songs[i].title = s.title || "";
+                  if (s.audioUrl) songs[i].audioUrl = s.audioUrl;
+                }
+              });
             }
           } catch {
             /* ignore */
@@ -170,6 +199,13 @@ export function useAnnivContent() {
         const bouquetImageUrl = imgs[23] ? imgs[23].getDirectURL() : "";
         const treasuresImageUrl = imgs[24] ? imgs[24].getDirectURL() : "";
 
+        // song cover images: slots 25-30
+        for (let i = 0; i < 6; i++) {
+          if (imgs[25 + i]) {
+            songs[i].coverUrl = imgs[25 + i].getDirectURL();
+          }
+        }
+
         if (!cancelled) {
           setContent({
             poems,
@@ -181,6 +217,7 @@ export function useAnnivContent() {
             bouquetImageUrl,
             treasuresImageUrl,
             subtexts,
+            songs,
           });
         }
       } catch {
@@ -291,6 +328,55 @@ export function useAnnivContent() {
     setContent((prev) => ({ ...prev, audioDataUrl: "", audioFileName: "" }));
   }
 
+  function uploadSongCover(
+    index: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) {
+    pendingSongCoverRef.current.set(index, { bytes, fileName });
+    setContent((prev) => {
+      const updated = [...prev.songs];
+      updated[index] = { ...updated[index], coverUrl: previewUrl };
+      return { ...prev, songs: updated };
+    });
+  }
+
+  function uploadSongAudio(
+    index: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    _previewUrl: string,
+  ) {
+    // Convert to data URL for persistence across sessions
+    const ext = fileName.split(".").pop()?.toLowerCase() || "mp3";
+    const mime =
+      ext === "mp4" || ext === "m4a"
+        ? "audio/mp4"
+        : ext === "ogg"
+          ? "audio/ogg"
+          : "audio/mpeg";
+    const b64 = btoa(
+      Array.from(new Uint8Array(bytes))
+        .map((b) => String.fromCharCode(b))
+        .join(""),
+    );
+    const dataUrl = `data:${mime};base64,${b64}`;
+    setContent((prev) => {
+      const updated = [...prev.songs];
+      updated[index] = { ...updated[index], audioUrl: dataUrl };
+      return { ...prev, songs: updated };
+    });
+  }
+
+  function setSongTitle(index: number, title: string) {
+    setContent((prev) => {
+      const updated = [...prev.songs];
+      updated[index] = { ...updated[index], title };
+      return { ...prev, songs: updated };
+    });
+  }
+
   async function saveToBackend(): Promise<void> {
     if (!actor) throw new Error("Actor not ready");
 
@@ -398,9 +484,33 @@ export function useAnnivContent() {
       pendingTreasuresRef.current = null;
     }
 
+    // Slots 25-30: song cover images
+    if (pendingSongCoverRef.current.size > 0) {
+      for (const [index, { bytes }] of pendingSongCoverRef.current) {
+        const slotIndex = 25 + index;
+        await ensureSlotAndUpload(slotIndex, bytes);
+        if (uploadedImages[slotIndex]) {
+          setContent((prev) => {
+            const updated = [...prev.songs];
+            updated[index] = {
+              ...updated[index],
+              coverUrl: uploadedImages[slotIndex].getDirectURL(),
+            };
+            return { ...prev, songs: updated };
+          });
+        }
+      }
+      pendingSongCoverRef.current = new Map();
+    }
+
+    // Songs audio URLs and titles are stored in JSON letterText
     const poemsJson = JSON.stringify({
       poems: content.poems,
       subtexts: content.subtexts,
+      songs: content.songs.map((s) => ({
+        title: s.title,
+        audioUrl: s.audioUrl,
+      })),
     });
 
     await actor.saveContent({
@@ -435,6 +545,9 @@ export function useAnnivContent() {
     uploadTreasures,
     setAudio,
     clearAudio,
+    uploadSongAudio,
+    uploadSongCover,
+    setSongTitle,
     saveToBackend,
   };
 }

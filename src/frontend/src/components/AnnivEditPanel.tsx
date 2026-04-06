@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import React, { useState } from "react";
 import {
   DEFAULT_SUBTEXTS,
+  type SongItem,
   type SubtextContent,
 } from "../hooks/useAnnivContent";
 import { DEFAULT_POEMS } from "./GameSection";
@@ -17,6 +18,11 @@ const POEM_SLOTS = [
 
 const POL_SLOTS = Array.from({ length: 20 }, (_, i) => ({
   id: `polslot-${i}`,
+  pos: i,
+}));
+
+const SONG_SLOTS = Array.from({ length: 6 }, (_, i) => ({
+  id: `songslot-${i}`,
   pos: i,
 }));
 
@@ -66,9 +72,30 @@ interface AnnivEditPanelProps {
   ) => void;
   subtexts: SubtextContent;
   onSubtextChange: (key: keyof SubtextContent, value: string) => void;
+  songs: SongItem[];
+  uploadSongAudio: (
+    index: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
+  uploadSongCover: (
+    index: number,
+    bytes: Uint8Array<ArrayBuffer>,
+    fileName: string,
+    previewUrl: string,
+  ) => void;
+  setSongTitle: (index: number, title: string) => void;
 }
 
-type TabId = "poems" | "bouquet" | "treasures" | "bench" | "photos" | "music";
+type TabId =
+  | "poems"
+  | "bouquet"
+  | "treasures"
+  | "bench"
+  | "photos"
+  | "music"
+  | "songs";
 
 const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: "poems", label: "Poems" },
@@ -77,6 +104,7 @@ const TAB_LABELS: { id: TabId; label: string }[] = [
   { id: "bench", label: "Bench" },
   { id: "photos", label: "Photos" },
   { id: "music", label: "Music" },
+  { id: "songs", label: "Songs" },
 ];
 
 export const UNLOCK_TAPS = 5;
@@ -121,6 +149,10 @@ export default function AnnivEditPanel({
   onUploadTreasures,
   subtexts,
   onSubtextChange,
+  songs,
+  uploadSongAudio,
+  uploadSongCover,
+  setSongTitle,
 }: AnnivEditPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("poems");
@@ -133,6 +165,12 @@ export default function AnnivEditPanel({
   const bouquetInputRef = React.useRef<HTMLInputElement>(null);
   const treasuresInputRef = React.useRef<HTMLInputElement>(null);
   const polaroidInputRefs = React.useRef<Map<number, HTMLInputElement>>(
+    new Map(),
+  );
+  const songAudioInputRefs = React.useRef<Map<number, HTMLInputElement>>(
+    new Map(),
+  );
+  const songCoverInputRefs = React.useRef<Map<number, HTMLInputElement>>(
     new Map(),
   );
   const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
@@ -188,6 +226,28 @@ export default function AnnivEditPanel({
     };
     reader.onerror = () => setAudioUploading(false);
     reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
+
+  async function handleSongAudioUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { bytes, previewUrl } = await readFileAsBytes(file);
+    uploadSongAudio(index, bytes, file.name, previewUrl);
+    e.target.value = "";
+  }
+
+  async function handleSongCoverUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { bytes, previewUrl } = await readFileAsBytes(file);
+    uploadSongCover(index, bytes, file.name, previewUrl);
     e.target.value = "";
   }
 
@@ -365,11 +425,11 @@ export default function AnnivEditPanel({
               </button>
             </div>
 
-            {/* Tabs — 2-row grid so all 6 are always visible */}
+            {/* Tabs — 2-row grid so all 7 are always visible */}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
+                gridTemplateColumns: "repeat(4, 1fr)",
                 borderBottom: "1px solid rgba(111,191,115,0.15)",
                 position: "sticky",
                 top: "65px",
@@ -384,14 +444,14 @@ export default function AnnivEditPanel({
                   data-ocid={`edit.${tab.id}.tab`}
                   onClick={() => setActiveTab(tab.id)}
                   style={{
-                    padding: "10px 4px",
+                    padding: "9px 2px",
                     border: "none",
                     background:
                       activeTab === tab.id
                         ? "rgba(111,191,115,0.15)"
                         : "transparent",
                     fontFamily: "'Lora', Georgia, serif",
-                    fontSize: "0.78rem",
+                    fontSize: "0.72rem",
                     fontWeight: activeTab === tab.id ? 700 : 400,
                     color: activeTab === tab.id ? "#3a5a40" : "#7a9e7e",
                     cursor: "pointer",
@@ -1064,6 +1124,143 @@ export default function AnnivEditPanel({
                       </button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ---- Songs Tab ---- */}
+              {activeTab === "songs" && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Lora', Georgia, serif",
+                      fontSize: "0.78rem",
+                      color: "#7a9e7e",
+                      margin: 0,
+                      fontStyle: "italic",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Upload audio and a cover image for each of the 6 vinyl
+                    players ♪
+                  </p>
+                  {SONG_SLOTS.map(({ id: songSlotId, pos: i }) => (
+                    <div
+                      key={songSlotId}
+                      style={{
+                        padding: "14px",
+                        background: "rgba(216,243,220,0.35)",
+                        borderRadius: "12px",
+                        border: "1px solid rgba(111,191,115,0.2)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontFamily: "'Lora', Georgia, serif",
+                          fontWeight: 600,
+                          fontSize: "0.82rem",
+                          color: "#3a5a40",
+                          margin: 0,
+                        }}
+                      >
+                        Vinyl {i + 1}
+                      </p>
+
+                      {/* Title input */}
+                      <input
+                        type="text"
+                        value={songs[i]?.title || ""}
+                        onChange={(e) => setSongTitle(i, e.target.value)}
+                        placeholder={`Song ${i + 1} title`}
+                        style={{
+                          ...inputStyle,
+                          fontSize: "0.8rem",
+                          resize: "none",
+                        }}
+                      />
+
+                      {/* Audio upload */}
+                      <input
+                        ref={(el) => {
+                          if (el) songAudioInputRefs.current.set(i, el);
+                          else songAudioInputRefs.current.delete(i);
+                        }}
+                        type="file"
+                        accept="audio/*,video/mp4"
+                        onChange={(e) => handleSongAudioUpload(e, i)}
+                        style={{ display: "none" }}
+                      />
+                      <button
+                        type="button"
+                        data-ocid={`vinyl.song.upload_button.${i + 1}`}
+                        onClick={() =>
+                          songAudioInputRefs.current.get(i)?.click()
+                        }
+                        style={{
+                          ...uploadButtonStyle,
+                          justifyContent: "flex-start",
+                          padding: "10px 12px",
+                          fontSize: "0.78rem",
+                        }}
+                      >
+                        {songs[i]?.audioUrl
+                          ? "🎵 Replace audio"
+                          : "🎵 Upload audio (mp3/mp4)"}
+                      </button>
+
+                      {/* Cover upload */}
+                      <input
+                        ref={(el) => {
+                          if (el) songCoverInputRefs.current.set(i, el);
+                          else songCoverInputRefs.current.delete(i);
+                        }}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleSongCoverUpload(e, i)}
+                        style={{ display: "none" }}
+                      />
+                      <button
+                        type="button"
+                        data-ocid={`vinyl.cover.upload_button.${i + 1}`}
+                        onClick={() =>
+                          songCoverInputRefs.current.get(i)?.click()
+                        }
+                        style={{
+                          ...uploadButtonStyle,
+                          justifyContent: "flex-start",
+                          padding: "10px 12px",
+                          fontSize: "0.78rem",
+                        }}
+                      >
+                        {songs[i]?.coverUrl ? (
+                          <>
+                            <img
+                              src={songs[i].coverUrl}
+                              alt=""
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                objectFit: "cover",
+                                borderRadius: "50%",
+                                marginRight: "8px",
+                              }}
+                            />
+                            Replace cover
+                          </>
+                        ) : (
+                          "🖼️ Upload cover image"
+                        )}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

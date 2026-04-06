@@ -14,6 +14,7 @@ import MemoryBed from "./components/MemoryBed";
 import OrnamDivider from "./components/OrnamDivider";
 import PolaroidGallery2 from "./components/PolaroidGallery2";
 import StarCanvas from "./components/StarCanvas";
+import VinylSection from "./components/VinylSection";
 import { useAnnivContent } from "./hooks/useAnnivContent";
 
 const DISPLAYED_DATE = "08/04/2026";
@@ -32,6 +33,9 @@ export default function App() {
     uploadTreasures,
     setAudio,
     clearAudio,
+    uploadSongAudio,
+    uploadSongCover,
+    setSongTitle,
     saveToBackend,
   } = useAnnivContent();
 
@@ -129,6 +133,7 @@ export default function App() {
           onUpload={uploadPolaroid}
           editMode={editUnlocked}
         />
+        <VinylSection songs={content.songs} editMode={editUnlocked} />
         <AnniversaryFinal />
       </main>
 
@@ -212,6 +217,10 @@ export default function App() {
         bouquetImageUrl={content.bouquetImageUrl}
         subtexts={content.subtexts}
         onSubtextChange={setSubtext}
+        songs={content.songs}
+        uploadSongAudio={uploadSongAudio}
+        uploadSongCover={uploadSongCover}
+        setSongTitle={setSongTitle}
       />
     </>
   );
