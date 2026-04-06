@@ -8,13 +8,16 @@ export default function OrnamDivider() {
         zIndex: 1,
         textAlign: "center",
         padding: "24px 0",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
       <svg
         viewBox="0 0 600 60"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ width: "min(560px, 90vw)", height: "auto" }}
+        style={{ width: "min(560px, 90vw)", height: "auto", display: "block" }}
         aria-hidden="true"
       >
         {/* Left vine */}

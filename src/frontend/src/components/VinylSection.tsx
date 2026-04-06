@@ -138,8 +138,8 @@ function VinylPlayer({
             {/* Center label circle — larger for visible cover art */}
             <div
               style={{
-                width: "50%",
-                height: "50%",
+                width: "62%",
+                height: "62%",
                 borderRadius: "50%",
                 background: song.coverUrl
                   ? `url(${song.coverUrl}) center/cover no-repeat`
