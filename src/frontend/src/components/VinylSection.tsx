@@ -25,7 +25,7 @@ function VinylPlayer({
   onEnded: () => void;
   index: number;
 }) {
-  const size = "clamp(110px, 20vw, 150px)";
+  const size = "clamp(130px, 22vw, 180px)";
 
   return (
     <div
@@ -49,6 +49,8 @@ function VinylPlayer({
           background: "none",
           border: "none",
           padding: 0,
+          overflow: "hidden",
+          borderRadius: "12px",
         }}
         onClick={onClick}
         aria-label={song.title ? `Play ${song.title}` : `Vinyl ${index + 1}`}
@@ -84,74 +86,84 @@ function VinylPlayer({
           }}
         />
 
-        {/* Spinning vinyl disc */}
+        {/* Spinning vinyl disc — clipped to stay inside the chassis */}
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "80%",
-            height: "80%",
+            width: "78%",
+            height: "78%",
             borderRadius: "50%",
-            background: `repeating-radial-gradient(
-              circle,
-              #0a0a0a 0%,
-              #1a1a1a 1.5%,
-              #0a0a0a 2%,
-              #1a1a1a 4%,
-              #0a0a0a 4.5%,
-              #1a1a1a 6.5%,
-              #0a0a0a 7%,
-              #1a1a1a 9%,
-              #0a0a0a 9.5%,
-              #1a1a1a 11.5%,
-              #0a0a0a 12%,
-              #1a1a1a 14%,
-              #0a0a0a 14.5%,
-              #1a1a1a 16.5%,
-              #0a0a0a 17%,
-              #1a1a1a 19%,
-              #0a0a0a 19.5%,
-              #1a1a1a 21.5%,
-              #0a0a0a 22%,
-              #222 100%
-            )`,
-            animation: hasAudio ? "vinylSpin 3.5s linear infinite" : "none",
-            animationPlayState: playing ? "running" : "paused",
+            overflow: "hidden",
+            flexShrink: 0,
           }}
         >
-          {/* Center label circle */}
           <div
             style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "37%",
-              height: "37%",
+              width: "100%",
+              height: "100%",
               borderRadius: "50%",
-              background: song.coverUrl
-                ? `url(${song.coverUrl}) center/cover no-repeat`
-                : "radial-gradient(circle, #4a4a4a 0%, #222 100%)",
-              border: "1.5px solid rgba(255,255,255,0.15)",
-              overflow: "hidden",
+              background: `repeating-radial-gradient(
+                circle,
+                #0a0a0a 0%,
+                #1a1a1a 1.5%,
+                #0a0a0a 2%,
+                #1a1a1a 4%,
+                #0a0a0a 4.5%,
+                #1a1a1a 6.5%,
+                #0a0a0a 7%,
+                #1a1a1a 9%,
+                #0a0a0a 9.5%,
+                #1a1a1a 11.5%,
+                #0a0a0a 12%,
+                #1a1a1a 14%,
+                #0a0a0a 14.5%,
+                #1a1a1a 16.5%,
+                #0a0a0a 17%,
+                #1a1a1a 19%,
+                #0a0a0a 19.5%,
+                #1a1a1a 21.5%,
+                #0a0a0a 22%,
+                #222 100%
+              )`,
+              animation: "vinylSpin 3.5s linear infinite",
+              animationPlayState: playing ? "running" : "paused",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            {/* Spindle hole */}
+            {/* Center label circle — larger for visible cover art */}
             <div
               style={{
-                width: "5px",
-                height: "5px",
+                width: "50%",
+                height: "50%",
                 borderRadius: "50%",
-                background: "#111",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: song.coverUrl
+                  ? `url(${song.coverUrl}) center/cover no-repeat`
+                  : "radial-gradient(circle, #4a4a4a 0%, #222 100%)",
+                border: "1.5px solid rgba(255,255,255,0.15)",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 flexShrink: 0,
               }}
-            />
+            >
+              {/* Spindle hole */}
+              <div
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#111",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  flexShrink: 0,
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -214,7 +226,7 @@ function VinylPlayer({
           color: hasAudio ? "#3a5a40" : "#aac9ab",
           margin: 0,
           textAlign: "center",
-          maxWidth: "clamp(90px, 16vw, 130px)",
+          maxWidth: "clamp(100px, 18vw, 160px)",
           overflow: "hidden",
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -312,8 +324,8 @@ export default function VinylSection({ songs }: VinylSectionProps) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "clamp(16px, 4vw, 32px)",
-          maxWidth: "680px",
+          gap: "clamp(16px, 4vw, 36px)",
+          maxWidth: "720px",
           margin: "0 auto",
         }}
       >
