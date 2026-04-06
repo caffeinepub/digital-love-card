@@ -8,6 +8,239 @@ interface VinylSectionProps {
 
 const VINYL_KEYS = ["v0", "v1", "v2", "v3", "v4", "v5"];
 
+function VinylPlayer({
+  song,
+  playing,
+  hasAudio,
+  onClick,
+  audioRef,
+  onEnded,
+  index,
+}: {
+  song: SongItem;
+  playing: boolean;
+  hasAudio: boolean;
+  onClick: () => void;
+  audioRef: (el: HTMLAudioElement | null) => void;
+  onEnded: () => void;
+  index: number;
+}) {
+  const size = "clamp(110px, 20vw, 150px)";
+
+  return (
+    <div
+      data-ocid={`vinyl.item.${index + 1}`}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "10px",
+        userSelect: "none",
+      }}
+    >
+      {/* Vinyl player chassis */}
+      <button
+        type="button"
+        style={{
+          position: "relative",
+          width: size,
+          height: size,
+          cursor: hasAudio ? "pointer" : "default",
+          background: "none",
+          border: "none",
+          padding: 0,
+        }}
+        onClick={onClick}
+        aria-label={song.title ? `Play ${song.title}` : `Vinyl ${index + 1}`}
+      >
+        {/* Player base / platter background */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "12px",
+            background:
+              "linear-gradient(145deg, #2a1f1a 0%, #1a120e 60%, #0e0a07 100%)",
+            boxShadow: playing
+              ? "0 6px 24px rgba(111,191,115,0.35), 0 2px 10px rgba(0,0,0,0.7)"
+              : "0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07)",
+            transition: "box-shadow 0.3s ease",
+          }}
+        />
+
+        {/* Platter rim ring */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "88%",
+            height: "88%",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #3a2a22 0%, #1c1410 100%)",
+            border: "2px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5) inset",
+          }}
+        />
+
+        {/* Spinning vinyl disc */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "80%",
+            height: "80%",
+            borderRadius: "50%",
+            background: `repeating-radial-gradient(
+              circle,
+              #0a0a0a 0%,
+              #1a1a1a 1.5%,
+              #0a0a0a 2%,
+              #1a1a1a 4%,
+              #0a0a0a 4.5%,
+              #1a1a1a 6.5%,
+              #0a0a0a 7%,
+              #1a1a1a 9%,
+              #0a0a0a 9.5%,
+              #1a1a1a 11.5%,
+              #0a0a0a 12%,
+              #1a1a1a 14%,
+              #0a0a0a 14.5%,
+              #1a1a1a 16.5%,
+              #0a0a0a 17%,
+              #1a1a1a 19%,
+              #0a0a0a 19.5%,
+              #1a1a1a 21.5%,
+              #0a0a0a 22%,
+              #222 100%
+            )`,
+            animation: hasAudio ? "vinylSpin 3.5s linear infinite" : "none",
+            animationPlayState: playing ? "running" : "paused",
+          }}
+        >
+          {/* Center label circle */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "37%",
+              height: "37%",
+              borderRadius: "50%",
+              background: song.coverUrl
+                ? `url(${song.coverUrl}) center/cover no-repeat`
+                : "radial-gradient(circle, #4a4a4a 0%, #222 100%)",
+              border: "1.5px solid rgba(255,255,255,0.15)",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {/* Spindle hole */}
+            <div
+              style={{
+                width: "5px",
+                height: "5px",
+                borderRadius: "50%",
+                background: "#111",
+                border: "1px solid rgba(255,255,255,0.12)",
+                flexShrink: 0,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Tonearm pivot base (top-right corner) */}
+        <div
+          style={{
+            position: "absolute",
+            top: "8%",
+            right: "8%",
+            width: "14%",
+            height: "14%",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 35% 35%, #b8a898, #6b5a4e 55%, #3a2e28 100%)",
+            boxShadow:
+              "0 1px 4px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.2)",
+            zIndex: 10,
+          }}
+        />
+
+        {/* Tonearm */}
+        <div
+          style={{
+            position: "absolute",
+            top: "10%",
+            right: "12%",
+            width: "3px",
+            height: "58%",
+            background: "linear-gradient(to bottom, #c8b8a8, #9a8878, #7a6858)",
+            borderRadius: "2px",
+            transformOrigin: "top center",
+            transform: playing ? "rotate(-28deg)" : "rotate(-18deg)",
+            transition: "transform 0.8s ease",
+            boxShadow: "1px 0 3px rgba(0,0,0,0.5)",
+            zIndex: 9,
+          }}
+        >
+          {/* Tonearm headshell / cartridge at the end */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "-6px",
+              left: "50%",
+              transform: "translateX(-50%) rotate(15deg)",
+              width: "10px",
+              height: "7px",
+              background: "linear-gradient(to bottom, #a09080, #6a5a50)",
+              borderRadius: "1px 1px 3px 3px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.5)",
+            }}
+          />
+        </div>
+      </button>
+
+      {/* Song title */}
+      <p
+        style={{
+          fontFamily: "'Lora', Georgia, serif",
+          fontSize: "0.78rem",
+          color: hasAudio ? "#3a5a40" : "#aac9ab",
+          margin: 0,
+          textAlign: "center",
+          maxWidth: "clamp(90px, 16vw, 130px)",
+          overflow: "hidden",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical" as const,
+          lineHeight: 1.4,
+          minHeight: "2.4em",
+          fontStyle: song.title ? "normal" : "italic",
+        }}
+      >
+        {song.title || (hasAudio ? "Untitled" : "Add song")}
+      </p>
+
+      {/* Hidden audio element */}
+      <audio
+        ref={audioRef}
+        src={song.audioUrl || undefined}
+        onEnded={onEnded}
+        preload="none"
+        style={{ display: "none" }}
+      >
+        <track kind="captions" />
+      </audio>
+    </div>
+  );
+}
+
 export default function VinylSection({ songs }: VinylSectionProps) {
   const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>(Array(6).fill(null));
@@ -72,7 +305,7 @@ export default function VinylSection({ songs }: VinylSectionProps) {
           fontStyle: "italic",
         }}
       >
-        click a vinyl to play ♪
+        tap a vinyl to play ♪
       </p>
 
       <div
@@ -90,166 +323,18 @@ export default function VinylSection({ songs }: VinylSectionProps) {
           const hasAudio = Boolean(song.audioUrl);
 
           return (
-            <button
+            <VinylPlayer
               key={key}
-              type="button"
-              data-ocid={`vinyl.item.${i + 1}`}
-              aria-label={song.title ? `Play ${song.title}` : `Vinyl ${i + 1}`}
+              song={song}
+              playing={playing}
+              hasAudio={hasAudio}
               onClick={() => handleVinylClick(i)}
-              style={{
-                cursor: hasAudio ? "pointer" : "default",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "10px",
-                outline: "none",
-                userSelect: "none",
-                background: "none",
-                border: "none",
-                padding: 0,
+              audioRef={(el) => {
+                audioRefs.current[i] = el;
               }}
-            >
-              {/* Vinyl disc container */}
-              <div
-                style={{
-                  width: "clamp(100px, 18vw, 140px)",
-                  height: "clamp(100px, 18vw, 140px)",
-                  position: "relative",
-                  margin: "0 auto",
-                }}
-              >
-                {/* Outer vinyl disc */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    background: `repeating-radial-gradient(
-                      circle,
-                      #0a0a0a 0%,
-                      #1a1a1a 1.5%,
-                      #0a0a0a 2%,
-                      #1a1a1a 4%,
-                      #0a0a0a 4.5%,
-                      #1a1a1a 6.5%,
-                      #0a0a0a 7%,
-                      #1a1a1a 9%,
-                      #0a0a0a 9.5%,
-                      #1a1a1a 11.5%,
-                      #0a0a0a 12%,
-                      #1a1a1a 14%,
-                      #0a0a0a 14.5%,
-                      #1a1a1a 16.5%,
-                      #0a0a0a 17%,
-                      #1a1a1a 19%,
-                      #0a0a0a 19.5%,
-                      #1a1a1a 21.5%,
-                      #0a0a0a 22%,
-                      #222 100%
-                    )`,
-                    position: "relative",
-                    animation: hasAudio
-                      ? "vinylSpin 4s linear infinite"
-                      : "none",
-                    animationPlayState: playing ? "running" : "paused",
-                    boxShadow: playing
-                      ? "0 0 24px rgba(111,191,115,0.4), 0 4px 16px rgba(0,0,0,0.5)"
-                      : "0 4px 16px rgba(0,0,0,0.5)",
-                    transition: "box-shadow 0.3s ease",
-                  }}
-                >
-                  {/* Center circle label area */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      width: "37%",
-                      height: "37%",
-                      borderRadius: "50%",
-                      background: song.coverUrl
-                        ? `url(${song.coverUrl}) center/cover no-repeat`
-                        : "radial-gradient(circle, #4a4a4a 0%, #222 100%)",
-                      border: "2px solid rgba(255,255,255,0.18)",
-                      overflow: "hidden",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {/* Center spindle hole */}
-                    <div
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: "#111",
-                        border: "1px solid rgba(255,255,255,0.15)",
-                        flexShrink: 0,
-                      }}
-                    />
-                  </div>
-
-                  {/* Play/pause indicator overlay */}
-                  {hasAudio && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "8%",
-                        right: "8%",
-                        width: "22%",
-                        height: "22%",
-                        borderRadius: "50%",
-                        background: "rgba(0,0,0,0.55)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "clamp(8px, 1.5vw, 12px)",
-                        color: playing ? "#6fbf73" : "rgba(255,255,255,0.7)",
-                        transition: "color 0.2s ease",
-                      }}
-                    >
-                      {playing ? "⏸" : "▶"}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Song title */}
-              <p
-                style={{
-                  fontFamily: "'Lora', Georgia, serif",
-                  fontSize: "0.78rem",
-                  color: hasAudio ? "#3a5a40" : "#aac9ab",
-                  margin: 0,
-                  textAlign: "center",
-                  maxWidth: "clamp(90px, 16vw, 130px)",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical" as const,
-                  lineHeight: 1.4,
-                  minHeight: "2.4em",
-                  fontStyle: song.title ? "normal" : "italic",
-                }}
-              >
-                {song.title || (hasAudio ? "Untitled" : "Add song")}
-              </p>
-
-              {/* Hidden audio element */}
-              <audio
-                ref={(el) => {
-                  audioRefs.current[i] = el;
-                }}
-                src={song.audioUrl || undefined}
-                onEnded={() => handleAudioEnded(i)}
-                preload="none"
-                style={{ display: "none" }}
-              >
-                <track kind="captions" />
-              </audio>
-            </button>
+              onEnded={() => handleAudioEnded(i)}
+              index={i}
+            />
           );
         })}
       </div>
