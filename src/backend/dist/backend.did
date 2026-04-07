@@ -1,0 +1,40 @@
+type LoveCard = 
+ record {
+   description: text;
+   photos: vec record {
+                 rotation: int;
+                 src: text;
+               };
+   title: text;
+ };
+type GalleryPhoto = 
+ record {
+   caption: text;
+   left: nat;
+   rotation: int;
+   size: nat;
+   src: text;
+   top: nat;
+   zIndex: nat;
+ };
+type CardContent = 
+ record {
+   audioFileName: text;
+   galleryPhotos: vec GalleryPhoto;
+   letterText: text;
+   loveCards: vec LoveCard;
+   uploadedAudio: vec blob;
+   uploadedImages: vec blob;
+ };
+service : {
+  addAudio: ("blob": blob) -> ();
+  addImage: ("blob": blob) -> ();
+  getAudio: (index: nat) -> (opt blob);
+  getContent: () -> (CardContent);
+  getImage: (index: nat) -> (opt blob);
+  listAudio: () -> (vec blob);
+  listImages: () -> (vec blob);
+  replaceAudio: (index: nat, "blob": blob) -> (bool);
+  replaceImage: (index: nat, "blob": blob) -> (bool);
+  saveContent: (newContent: CardContent) -> ();
+}

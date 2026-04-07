@@ -13,12 +13,11 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface CardContent {
   'loveCards' : Array<LoveCard>,
   'letterText' : string,
-  'uploadedImages' : Array<ExternalBlob>,
+  'uploadedImages' : Array<Uint8Array>,
   'audioFileName' : string,
-  'uploadedAudio' : Array<ExternalBlob>,
+  'uploadedAudio' : Array<Uint8Array>,
   'galleryPhotos' : Array<GalleryPhoto>,
 }
-export type ExternalBlob = Uint8Array;
 export interface GalleryPhoto {
   'src' : string,
   'top' : bigint,
@@ -33,42 +32,16 @@ export interface LoveCard {
   'description' : string,
   'photos' : Array<{ 'src' : string, 'rotation' : bigint }>,
 }
-export interface _CaffeineStorageCreateCertificateResult {
-  'method' : string,
-  'blob_hash' : string,
-}
-export interface _CaffeineStorageRefillInformation {
-  'proposed_top_up_amount' : [] | [bigint],
-}
-export interface _CaffeineStorageRefillResult {
-  'success' : [] | [boolean],
-  'topped_up_amount' : [] | [bigint],
-}
 export interface _SERVICE {
-  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
-  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
-  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
-    [Array<Uint8Array>],
-    undefined
-  >,
-  '_caffeineStorageCreateCertificate' : ActorMethod<
-    [string],
-    _CaffeineStorageCreateCertificateResult
-  >,
-  '_caffeineStorageRefillCashier' : ActorMethod<
-    [[] | [_CaffeineStorageRefillInformation]],
-    _CaffeineStorageRefillResult
-  >,
-  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  'addAudio' : ActorMethod<[ExternalBlob], undefined>,
-  'addImage' : ActorMethod<[ExternalBlob], undefined>,
-  'getAudio' : ActorMethod<[bigint], [] | [ExternalBlob]>,
+  'addAudio' : ActorMethod<[Uint8Array], undefined>,
+  'addImage' : ActorMethod<[Uint8Array], undefined>,
+  'getAudio' : ActorMethod<[bigint], [] | [Uint8Array]>,
   'getContent' : ActorMethod<[], CardContent>,
-  'getImage' : ActorMethod<[bigint], [] | [ExternalBlob]>,
-  'listAudio' : ActorMethod<[], Array<ExternalBlob>>,
-  'listImages' : ActorMethod<[], Array<ExternalBlob>>,
-  'replaceAudio' : ActorMethod<[bigint, ExternalBlob], boolean>,
-  'replaceImage' : ActorMethod<[bigint, ExternalBlob], boolean>,
+  'getImage' : ActorMethod<[bigint], [] | [Uint8Array]>,
+  'listAudio' : ActorMethod<[], Array<Uint8Array>>,
+  'listImages' : ActorMethod<[], Array<Uint8Array>>,
+  'replaceAudio' : ActorMethod<[bigint, Uint8Array], boolean>,
+  'replaceImage' : ActorMethod<[bigint, Uint8Array], boolean>,
   'saveContent' : ActorMethod<[CardContent], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

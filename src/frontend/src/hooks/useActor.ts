@@ -1,56 +1,28 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import type { backendInterface } from "../backend";
-import { createActorWithConfig } from "../config";
-import { useInternetIdentity } from "./useInternetIdentity";
+/**
+ * useActor — wraps the platform's core-infrastructure useActor with our
+ * generated createActor function. Returns { actor, isFetching } where actor
+ * is the typed backend interface or null while loading.
+ *
+ * The platform's createActorFunction signature requires uploadFile / downloadFile
+ * callbacks for ExternalBlob support. Since we manage blobs as raw Uint8Array
+ * directly, we provide identity pass-through handlers.
+ */
+import { useActor as usePlatformActor } from "@caffeineai/core-infrastructure";
+import { ExternalBlob, createActor } from "../backend";
+import type { backendInterface } from "../backend.d";
 
-const ACTOR_QUERY_KEY = "actor";
-export function useActor() {
-  const { identity } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const actorQuery = useQuery<backendInterface>({
-    queryKey: [ACTOR_QUERY_KEY, identity?.getPrincipal().toString()],
-    queryFn: async () => {
-      const isAuthenticated = !!identity;
-
-      if (!isAuthenticated) {
-        // Return anonymous actor if not authenticated
-        return await createActorWithConfig();
-      }
-
-      const actorOptions = {
-        agentOptions: {
-          identity,
-        },
-      };
-
-      const actor = await createActorWithConfig(actorOptions);
-      return actor;
-    },
-    // Only refetch when identity changes
-    staleTime: Number.POSITIVE_INFINITY,
-    // This will cause the actor to be recreated when the identity changes
-    enabled: true,
-  });
-
-  // When the actor changes, invalidate dependent queries
-  useEffect(() => {
-    if (actorQuery.data) {
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-      queryClient.refetchQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-    }
-  }, [actorQuery.data, queryClient]);
-
-  return {
-    actor: actorQuery.data || null,
-    isFetching: actorQuery.isFetching,
-  };
+export function useActor(): {
+  actor: backendInterface | null;
+  isFetching: boolean;
+} {
+  return usePlatformActor<backendInterface>(
+    (canisterId, _uploadFile, _downloadFile, options) =>
+      createActor(
+        canisterId,
+        async (file: ExternalBlob) => file.getBytes(),
+        async (bytes: Uint8Array) =>
+          ExternalBlob.fromBytes(bytes as Uint8Array<ArrayBuffer>),
+        options,
+      ),
+  );
 }

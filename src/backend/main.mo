@@ -1,12 +1,8 @@
-import Array "mo:core/Array";
-import Text "mo:core/Text";
-import Storage "blob-storage/Storage";
+import List "mo:core/List";
+import Migration "migration";
 
-import MixinStorage "blob-storage/Mixin";
-
-
+(with migration = Migration.run)
 actor {
-  include MixinStorage();
 
   public type LoveCard = {
     title : Text;
@@ -24,17 +20,32 @@ actor {
     zIndex : Nat;
   };
 
+  // Metadata only — no blobs stored here
+  public type CardContentMeta = {
+    letterText : Text;
+    loveCards : [LoveCard];
+    galleryPhotos : [GalleryPhoto];
+    audioFileName : Text;
+  };
+
+  // Public API type (with blob fields for backward compat with frontend)
   public type CardContent = {
     letterText : Text;
     loveCards : [LoveCard];
     galleryPhotos : [GalleryPhoto];
     audioFileName : Text;
-    uploadedImages : [Storage.ExternalBlob];
-    uploadedAudio : [Storage.ExternalBlob];
+    uploadedImages : [Blob];
+    uploadedAudio : [Blob];
   };
 
-  // Default content function
-  func defaultContent() : CardContent {
+  // Metadata storage (no blobs — persists via enhanced orthogonal persistence)
+  var meta : ?CardContentMeta = null;
+
+  // Separate blob storage — blobs never go through saveContent
+  let images : List.List<Blob> = List.empty<Blob>();
+  let audioFiles : List.List<Blob> = List.empty<Blob>();
+
+  func defaultMeta() : CardContentMeta {
     {
       letterText = "Write your love letter here…";
       loveCards = [
@@ -56,129 +67,69 @@ actor {
       ];
       galleryPhotos = [];
       audioFileName = "";
-      uploadedImages = [];
-      uploadedAudio = [];
     };
   };
 
-  var content : ?CardContent = null;
-
-  public shared ({ caller }) func getContent() : async CardContent {
-    switch (content) {
-      case (?existingContent) { existingContent };
-      case (null) { defaultContent() };
+  public shared func getContent() : async CardContent {
+    let m = switch (meta) {
+      case (?m) { m };
+      case (null) { defaultMeta() };
+    };
+    {
+      letterText = m.letterText;
+      loveCards = m.loveCards;
+      galleryPhotos = m.galleryPhotos;
+      audioFileName = m.audioFileName;
+      uploadedImages = images.toArray();
+      uploadedAudio = audioFiles.toArray();
     };
   };
 
-  public shared ({ caller }) func saveContent(newContent : CardContent) : async () {
-    content := ?newContent;
-  };
-
-  public shared ({ caller }) func addImage(blob : Storage.ExternalBlob) : async () {
-    switch (content) {
-      case (?existingContent) {
-        let updatedImages = existingContent.uploadedImages.concat([blob]);
-        let updatedContent = {
-          existingContent with
-          uploadedImages = updatedImages
-        };
-        content := ?updatedContent;
-      };
-      case (null) {};
+  // Save only metadata — ignore uploadedImages/uploadedAudio from payload
+  public shared func saveContent(newContent : CardContent) : async () {
+    meta := ?{
+      letterText = newContent.letterText;
+      loveCards = newContent.loveCards;
+      galleryPhotos = newContent.galleryPhotos;
+      audioFileName = newContent.audioFileName;
     };
   };
 
-  public shared ({ caller }) func addAudio(blob : Storage.ExternalBlob) : async () {
-    switch (content) {
-      case (?existingContent) {
-        let updatedAudio = existingContent.uploadedAudio.concat([blob]);
-        let updatedContent = {
-          existingContent with
-          uploadedAudio = updatedAudio
-        };
-        content := ?updatedContent;
-      };
-      case (null) {};
-    };
+  public shared func addImage(blob : Blob) : async () {
+    images.add(blob);
   };
 
-  public shared ({ caller }) func getImage(index : Nat) : async ?Storage.ExternalBlob {
-    switch (content) {
-      case (?existingContent) {
-        if (index < existingContent.uploadedImages.size()) {
-          ?existingContent.uploadedImages[index];
-        } else {
-          null;
-        };
-      };
-      case (null) { null };
-    };
+  public shared func addAudio(blob : Blob) : async () {
+    audioFiles.add(blob);
   };
 
-  public shared ({ caller }) func getAudio(index : Nat) : async ?Storage.ExternalBlob {
-    switch (content) {
-      case (?existingContent) {
-        if (index < existingContent.uploadedAudio.size()) {
-          ?existingContent.uploadedAudio[index];
-        } else {
-          null;
-        };
-      };
-      case (null) { null };
-    };
+  public shared func getImage(index : Nat) : async ?Blob {
+    if (index >= images.size()) return null;
+    ?images.at(index);
   };
 
-  public shared ({ caller }) func replaceImage(index : Nat, blob : Storage.ExternalBlob) : async Bool {
-    switch (content) {
-      case (?existingContent) {
-        if (index < existingContent.uploadedImages.size()) {
-          let images = existingContent.uploadedImages.toVarArray();
-          images[index] := blob;
-          let updatedContent = {
-            existingContent with
-            uploadedImages = images.toArray();
-          };
-          content := ?updatedContent;
-          true;
-        } else {
-          false;
-        };
-      };
-      case (null) { false };
-    };
+  public shared func getAudio(index : Nat) : async ?Blob {
+    if (index >= audioFiles.size()) return null;
+    ?audioFiles.at(index);
   };
 
-  public shared ({ caller }) func replaceAudio(index : Nat, blob : Storage.ExternalBlob) : async Bool {
-    switch (content) {
-      case (?existingContent) {
-        if (index < existingContent.uploadedAudio.size()) {
-          let audioFiles = existingContent.uploadedAudio.toVarArray();
-          audioFiles[index] := blob;
-          let updatedContent = {
-            existingContent with
-            uploadedAudio = audioFiles.toArray();
-          };
-          content := ?updatedContent;
-          true;
-        } else {
-          false;
-        };
-      };
-      case (null) { false };
-    };
+  public shared func replaceImage(index : Nat, blob : Blob) : async Bool {
+    if (index >= images.size()) return false;
+    images.put(index, blob);
+    true;
   };
 
-  public shared ({ caller }) func listImages() : async [Storage.ExternalBlob] {
-    switch (content) {
-      case (?existingContent) { existingContent.uploadedImages };
-      case (null) { [] };
-    };
+  public shared func replaceAudio(index : Nat, blob : Blob) : async Bool {
+    if (index >= audioFiles.size()) return false;
+    audioFiles.put(index, blob);
+    true;
   };
 
-  public shared ({ caller }) func listAudio() : async [Storage.ExternalBlob] {
-    switch (content) {
-      case (?existingContent) { existingContent.uploadedAudio };
-      case (null) { [] };
-    };
+  public shared func listImages() : async [Blob] {
+    images.toArray();
+  };
+
+  public shared func listAudio() : async [Blob] {
+    audioFiles.toArray();
   };
 };

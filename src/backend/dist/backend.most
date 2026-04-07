@@ -1,0 +1,60 @@
+// Version: 3.0.0
+type CardContentMeta__932677620 =
+  {
+    audioFileName : Text;
+    galleryPhotos : [GalleryPhoto__25246558];
+    letterText : Text;
+    loveCards : [LoveCard__1049532420]
+  };
+type GalleryPhoto__25246558 =
+  {
+    caption : Text;
+    left : Nat;
+    rotation : Int;
+    size : Nat;
+    src : Text;
+    top : Nat;
+    zIndex : Nat
+  };
+type LoveCard__1049532420 =
+  {description : Text; photos : [{rotation : Int; src : Text}]; title : Text};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type OldCardContent__418821525 =
+  {
+    audioFileName : Text;
+    galleryPhotos : [OldGalleryPhoto__36486616];
+    letterText : Text;
+    loveCards : [OldLoveCard__729871535];
+    uploadedAudio : [Blob];
+    uploadedImages : [Blob]
+  };
+type OldGalleryPhoto__36486616 =
+  {
+    caption : Text;
+    left : Nat;
+    rotation : Int;
+    size : Nat;
+    src : Text;
+    top : Nat;
+    zIndex : Nat
+  };
+type OldLoveCard__729871535 =
+  {description : Text; photos : [{rotation : Int; src : Text}]; title : Text};
+actor ({
+  in var content : ?OldCardContent__418821525
+}, {
+  stable audioFiles :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Blob]];
+      var elementIndex : Nat__490723111
+    };
+  stable images :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Blob]];
+      var elementIndex : Nat__490723111
+    };
+  stable var meta : ?CardContentMeta__932677620
+}) ;

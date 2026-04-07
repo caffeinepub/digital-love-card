@@ -8,18 +8,6 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const _CaffeineStorageCreateCertificateResult = IDL.Record({
-  'method' : IDL.Text,
-  'blob_hash' : IDL.Text,
-});
-export const _CaffeineStorageRefillInformation = IDL.Record({
-  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
-});
-export const _CaffeineStorageRefillResult = IDL.Record({
-  'success' : IDL.Opt(IDL.Bool),
-  'topped_up_amount' : IDL.Opt(IDL.Nat),
-});
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const LoveCard = IDL.Record({
   'title' : IDL.Text,
   'description' : IDL.Text,
@@ -37,66 +25,28 @@ export const GalleryPhoto = IDL.Record({
 export const CardContent = IDL.Record({
   'loveCards' : IDL.Vec(LoveCard),
   'letterText' : IDL.Text,
-  'uploadedImages' : IDL.Vec(ExternalBlob),
+  'uploadedImages' : IDL.Vec(IDL.Vec(IDL.Nat8)),
   'audioFileName' : IDL.Text,
-  'uploadedAudio' : IDL.Vec(ExternalBlob),
+  'uploadedAudio' : IDL.Vec(IDL.Vec(IDL.Nat8)),
   'galleryPhotos' : IDL.Vec(GalleryPhoto),
 });
 
 export const idlService = IDL.Service({
-  '_caffeineStorageBlobIsLive' : IDL.Func(
-      [IDL.Vec(IDL.Nat8)],
-      [IDL.Bool],
-      ['query'],
-    ),
-  '_caffeineStorageBlobsToDelete' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
-      ['query'],
-    ),
-  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
-      [],
-      [],
-    ),
-  '_caffeineStorageCreateCertificate' : IDL.Func(
-      [IDL.Text],
-      [_CaffeineStorageCreateCertificateResult],
-      [],
-    ),
-  '_caffeineStorageRefillCashier' : IDL.Func(
-      [IDL.Opt(_CaffeineStorageRefillInformation)],
-      [_CaffeineStorageRefillResult],
-      [],
-    ),
-  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-  'addAudio' : IDL.Func([ExternalBlob], [], []),
-  'addImage' : IDL.Func([ExternalBlob], [], []),
-  'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+  'addAudio' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+  'addImage' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+  'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(IDL.Vec(IDL.Nat8))], []),
   'getContent' : IDL.Func([], [CardContent], []),
-  'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
-  'listAudio' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
-  'listImages' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
-  'replaceAudio' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
-  'replaceImage' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+  'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(IDL.Vec(IDL.Nat8))], []),
+  'listAudio' : IDL.Func([], [IDL.Vec(IDL.Vec(IDL.Nat8))], []),
+  'listImages' : IDL.Func([], [IDL.Vec(IDL.Vec(IDL.Nat8))], []),
+  'replaceAudio' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
+  'replaceImage' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
   'saveContent' : IDL.Func([CardContent], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const _CaffeineStorageCreateCertificateResult = IDL.Record({
-    'method' : IDL.Text,
-    'blob_hash' : IDL.Text,
-  });
-  const _CaffeineStorageRefillInformation = IDL.Record({
-    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
-  });
-  const _CaffeineStorageRefillResult = IDL.Record({
-    'success' : IDL.Opt(IDL.Bool),
-    'topped_up_amount' : IDL.Opt(IDL.Nat),
-  });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const LoveCard = IDL.Record({
     'title' : IDL.Text,
     'description' : IDL.Text,
@@ -114,48 +64,22 @@ export const idlFactory = ({ IDL }) => {
   const CardContent = IDL.Record({
     'loveCards' : IDL.Vec(LoveCard),
     'letterText' : IDL.Text,
-    'uploadedImages' : IDL.Vec(ExternalBlob),
+    'uploadedImages' : IDL.Vec(IDL.Vec(IDL.Nat8)),
     'audioFileName' : IDL.Text,
-    'uploadedAudio' : IDL.Vec(ExternalBlob),
+    'uploadedAudio' : IDL.Vec(IDL.Vec(IDL.Nat8)),
     'galleryPhotos' : IDL.Vec(GalleryPhoto),
   });
   
   return IDL.Service({
-    '_caffeineStorageBlobIsLive' : IDL.Func(
-        [IDL.Vec(IDL.Nat8)],
-        [IDL.Bool],
-        ['query'],
-      ),
-    '_caffeineStorageBlobsToDelete' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        ['query'],
-      ),
-    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        [],
-        [],
-      ),
-    '_caffeineStorageCreateCertificate' : IDL.Func(
-        [IDL.Text],
-        [_CaffeineStorageCreateCertificateResult],
-        [],
-      ),
-    '_caffeineStorageRefillCashier' : IDL.Func(
-        [IDL.Opt(_CaffeineStorageRefillInformation)],
-        [_CaffeineStorageRefillResult],
-        [],
-      ),
-    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-    'addAudio' : IDL.Func([ExternalBlob], [], []),
-    'addImage' : IDL.Func([ExternalBlob], [], []),
-    'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
+    'addAudio' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+    'addImage' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
+    'getAudio' : IDL.Func([IDL.Nat], [IDL.Opt(IDL.Vec(IDL.Nat8))], []),
     'getContent' : IDL.Func([], [CardContent], []),
-    'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(ExternalBlob)], []),
-    'listAudio' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
-    'listImages' : IDL.Func([], [IDL.Vec(ExternalBlob)], []),
-    'replaceAudio' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
-    'replaceImage' : IDL.Func([IDL.Nat, ExternalBlob], [IDL.Bool], []),
+    'getImage' : IDL.Func([IDL.Nat], [IDL.Opt(IDL.Vec(IDL.Nat8))], []),
+    'listAudio' : IDL.Func([], [IDL.Vec(IDL.Vec(IDL.Nat8))], []),
+    'listImages' : IDL.Func([], [IDL.Vec(IDL.Vec(IDL.Nat8))], []),
+    'replaceAudio' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
+    'replaceImage' : IDL.Func([IDL.Nat, IDL.Vec(IDL.Nat8)], [IDL.Bool], []),
     'saveContent' : IDL.Func([CardContent], [], []),
   });
 };

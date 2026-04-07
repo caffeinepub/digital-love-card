@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { ExternalBlob } from "../backend";
 import { DEFAULT_POEMS } from "../components/GameSection";
 import { useActor } from "./useActor";
 
@@ -16,17 +15,12 @@ export interface SongItem {
 }
 
 export interface SubtextContent {
-  // Bouquet section
   bouquetHeading: string;
   bouquetSubtext: string;
-  // Bench section
   benchCaption: string;
-  // Treasures section
   treasuresHeading: string;
   treasuresSubtext: string;
-  // Game section
   gameHeading: string;
-  // Timer section
   timerSubtext: string;
 }
 
@@ -41,9 +35,9 @@ export const DEFAULT_SUBTEXTS: SubtextContent = {
 };
 
 export interface AnnivContent {
-  poems: string[]; // 6 poems for dice rolls
+  poems: string[];
   boardGameImageUrl: string;
-  polaroids: PolaroidItem[]; // 20 slots (2 strings × 10)
+  polaroids: PolaroidItem[];
   audioDataUrl: string;
   audioFileName: string;
   benchImageUrl: string;
@@ -82,6 +76,21 @@ const DEFAULT_CONTENT: AnnivContent = {
 };
 
 /**
+ * Convert a Uint8Array blob to a browser object URL.
+ * Returns empty string if bytes are empty/null.
+ */
+function bytesToObjectUrl(
+  bytes: Uint8Array | null | undefined,
+  mimeType = "application/octet-stream",
+): string {
+  if (!bytes || bytes.length === 0) return "";
+  // new Uint8Array(bytes) normalises ArrayBufferLike to ArrayBuffer for Blob
+  return URL.createObjectURL(
+    new Blob([new Uint8Array(bytes)], { type: mimeType }),
+  );
+}
+
+/**
  * Image slot mapping:
  * uploadedImages[0]       = board game image
  * uploadedImages[1]       = bench image (single photo of both characters)
@@ -100,39 +109,39 @@ export function useAnnivContent() {
   const { actor, isFetching } = useActor();
   const [content, setContent] = useState<AnnivContent>(DEFAULT_CONTENT);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const pendingAudioRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
   const pendingBoardGameRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
   const pendingBenchImageRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
   const pendingPolaroidsRef = useRef<
-    Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+    Map<number, { bytes: Uint8Array; fileName: string }>
   >(new Map());
   const pendingBouquetRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
   const pendingTreasuresRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
   const pendingSongCoverRef = useRef<
-    Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+    Map<number, { bytes: Uint8Array; fileName: string }>
   >(new Map());
-  // Song audio stored as blobs, NOT base64 data URLs
   const pendingSongAudioRef = useRef<
-    Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+    Map<number, { bytes: Uint8Array; fileName: string }>
   >(new Map());
   const pendingPuzzleImageRef = useRef<{
-    bytes: Uint8Array<ArrayBuffer>;
+    bytes: Uint8Array;
     fileName: string;
   } | null>(null);
 
@@ -143,7 +152,11 @@ export function useAnnivContent() {
     async function load() {
       if (!actor) return;
       try {
-        const backendContent = await actor.getContent();
+        const [backendContent, imgs, audioSlots] = await Promise.all([
+          actor.getContent(),
+          actor.listImages(),
+          actor.listAudio(),
+        ]);
 
         let poems = [...DEFAULT_POEMS];
         let subtexts = { ...DEFAULT_SUBTEXTS };
@@ -168,28 +181,22 @@ export function useAnnivContent() {
             }
             if (parsed.songs && Array.isArray(parsed.songs)) {
               parsed.songs.forEach((s: Partial<SongItem>, i: number) => {
-                if (i < 6) {
-                  songs[i].title = s.title || "";
-                  // Note: audioUrl is NOT stored in JSON anymore — loaded from blob storage below
-                }
+                if (i < 6) songs[i].title = s.title || "";
               });
             }
           } catch {
-            /* ignore */
+            /* ignore malformed JSON */
           }
         }
 
-        const imgs = backendContent.uploadedImages ?? [];
-        const audioSlots = backendContent.uploadedAudio ?? [];
-
-        const boardGameImageUrl = imgs[0] ? imgs[0].getDirectURL() : "";
-        const benchImageUrl = imgs[1] ? imgs[1].getDirectURL() : "";
+        const boardGameImageUrl = bytesToObjectUrl(imgs[0], "image/*");
+        const benchImageUrl = bytesToObjectUrl(imgs[1], "image/*");
 
         // polaroids: slots 3..22
         const polaroids: PolaroidItem[] = Array.from(
           { length: TOTAL_POLAROIDS },
           (_, i) => ({
-            src: imgs[3 + i] ? imgs[3 + i].getDirectURL() : "",
+            src: bytesToObjectUrl(imgs[3 + i], "image/*"),
             caption: "",
             rotation: DEFAULT_ROTATIONS[i],
           }),
@@ -205,33 +212,26 @@ export function useAnnivContent() {
             });
         }
 
-        let audioDataUrl = "";
+        // Background audio slot 0
+        const audioDataUrl = bytesToObjectUrl(audioSlots[0], "audio/*");
         const audioFileName = backendContent.audioFileName || "";
-        // Background music is at audio slot 0
-        if (audioSlots.length > 0) {
-          audioDataUrl = audioSlots[0].getDirectURL();
-        }
 
         // bouquet: slot 23, treasures: slot 24
-        const bouquetImageUrl = imgs[23] ? imgs[23].getDirectURL() : "";
-        const treasuresImageUrl = imgs[24] ? imgs[24].getDirectURL() : "";
+        const bouquetImageUrl = bytesToObjectUrl(imgs[23], "image/*");
+        const treasuresImageUrl = bytesToObjectUrl(imgs[24], "image/*");
 
         // song cover images: slots 25-30
         for (let i = 0; i < 6; i++) {
-          if (imgs[25 + i]) {
-            songs[i].coverUrl = imgs[25 + i].getDirectURL();
-          }
+          songs[i].coverUrl = bytesToObjectUrl(imgs[25 + i], "image/*");
         }
 
         // song audio: audio slots 1-6
         for (let i = 0; i < 6; i++) {
-          if (audioSlots[1 + i]) {
-            songs[i].audioUrl = audioSlots[1 + i].getDirectURL();
-          }
+          songs[i].audioUrl = bytesToObjectUrl(audioSlots[1 + i], "audio/*");
         }
 
         // puzzle image: slot 31
-        const puzzleImageUrl = imgs[31] ? imgs[31].getDirectURL() : "";
+        const puzzleImageUrl = bytesToObjectUrl(imgs[31], "image/*");
 
         if (!cancelled) {
           setContent({
@@ -249,7 +249,7 @@ export function useAnnivContent() {
           });
         }
       } catch {
-        /* keep defaults */
+        /* keep defaults on error */
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -281,30 +281,30 @@ export function useAnnivContent() {
   }
 
   function uploadBoardGame(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingBoardGameRef.current = { bytes, fileName };
+    pendingBoardGameRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({ ...prev, boardGameImageUrl: previewUrl }));
   }
 
   function uploadBenchImage(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingBenchImageRef.current = { bytes, fileName };
+    pendingBenchImageRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({ ...prev, benchImageUrl: previewUrl }));
   }
 
   function uploadPolaroid(
     index: number,
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingPolaroidsRef.current.set(index, { bytes, fileName });
+    pendingPolaroidsRef.current.set(index, { bytes, fileName: _fileName });
     setContent((prev) => {
       const updated = [...prev.polaroids];
       updated[index] = { ...updated[index], src: previewUrl };
@@ -321,33 +321,29 @@ export function useAnnivContent() {
   }
 
   function uploadBouquet(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingBouquetRef.current = { bytes, fileName };
+    pendingBouquetRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({ ...prev, bouquetImageUrl: previewUrl }));
   }
 
   function uploadTreasures(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingTreasuresRef.current = { bytes, fileName };
+    pendingTreasuresRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({ ...prev, treasuresImageUrl: previewUrl }));
   }
 
-  function setAudio(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
-    previewUrl: string,
-  ) {
-    pendingAudioRef.current = { bytes, fileName };
+  function setAudio(bytes: Uint8Array, _fileName: string, previewUrl: string) {
+    pendingAudioRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({
       ...prev,
       audioDataUrl: previewUrl,
-      audioFileName: fileName,
+      audioFileName: _fileName,
     }));
   }
 
@@ -358,11 +354,11 @@ export function useAnnivContent() {
 
   function uploadSongCover(
     index: number,
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingSongCoverRef.current.set(index, { bytes, fileName });
+    pendingSongCoverRef.current.set(index, { bytes, fileName: _fileName });
     setContent((prev) => {
       const updated = [...prev.songs];
       updated[index] = { ...updated[index], coverUrl: previewUrl };
@@ -370,14 +366,13 @@ export function useAnnivContent() {
     });
   }
 
-  // Song audio is now stored as a blob (NOT base64), shown as object URL for preview
   function uploadSongAudio(
     index: number,
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingSongAudioRef.current.set(index, { bytes, fileName });
+    pendingSongAudioRef.current.set(index, { bytes, fileName: _fileName });
     setContent((prev) => {
       const updated = [...prev.songs];
       updated[index] = { ...updated[index], audioUrl: previewUrl };
@@ -394,225 +389,214 @@ export function useAnnivContent() {
   }
 
   function uploadPuzzleImage(
-    bytes: Uint8Array<ArrayBuffer>,
-    fileName: string,
+    bytes: Uint8Array,
+    _fileName: string,
     previewUrl: string,
   ) {
-    pendingPuzzleImageRef.current = { bytes, fileName };
+    pendingPuzzleImageRef.current = { bytes, fileName: _fileName };
     setContent((prev) => ({ ...prev, puzzleImageUrl: previewUrl }));
   }
 
   async function saveToBackend(): Promise<void> {
-    if (!actor) throw new Error("Actor not ready");
+    if (!actor)
+      throw new Error("Actor not ready — please try again in a moment");
+    setSaveError(null);
 
-    // ---- Background audio (slot 0) ----
-    let uploadedAudio = await actor.listAudio();
-    if (pendingAudioRef.current) {
-      const blob = ExternalBlob.fromBytes(pendingAudioRef.current.bytes);
-      if (uploadedAudio.length > 0) {
-        await actor.replaceAudio(0n, blob);
-      } else {
-        await actor.addAudio(blob);
-      }
-      uploadedAudio = await actor.listAudio();
-      if (uploadedAudio.length > 0) {
-        setContent((prev) => ({
-          ...prev,
-          audioDataUrl: uploadedAudio[0].getDirectURL(),
-        }));
-      }
-      pendingAudioRef.current = null;
-    }
-
-    // ---- Song audio files (slots 1-6) ----
-    // Ensure slot 0 exists before writing to slots 1-6
-    uploadedAudio = await actor.listAudio();
-
-    async function ensureAudioSlotAndUpload(
-      slotIndex: number,
-      bytes: Uint8Array<ArrayBuffer>,
-    ) {
-      const blob = ExternalBlob.fromBytes(bytes);
-      // Fill any missing slots before slotIndex with empty placeholders
-      while (uploadedAudio.length <= slotIndex) {
-        if (uploadedAudio.length === 0) {
-          // slot 0 must always be background audio; add placeholder if absent
-          await actor!.addAudio(ExternalBlob.fromBytes(new Uint8Array(0)));
+    try {
+      // ---- Background audio (slot 0) ----
+      let audioList = await actor.listAudio();
+      if (pendingAudioRef.current) {
+        const bytes = pendingAudioRef.current.bytes;
+        if (audioList.length > 0) {
+          await actor.replaceAudio(0n, bytes);
         } else {
-          await actor!.addAudio(ExternalBlob.fromBytes(new Uint8Array(0)));
+          await actor.addAudio(bytes);
         }
-        uploadedAudio = await actor!.listAudio();
-      }
-      await actor!.replaceAudio(BigInt(slotIndex), blob);
-      uploadedAudio = await actor!.listAudio();
-    }
-
-    if (pendingSongAudioRef.current.size > 0) {
-      for (const [index, { bytes }] of pendingSongAudioRef.current) {
-        const slotIndex = 1 + index; // audio slots 1-6
-        await ensureAudioSlotAndUpload(slotIndex, bytes);
-        if (uploadedAudio[slotIndex]) {
-          setContent((prev) => {
-            const updated = [...prev.songs];
-            updated[index] = {
-              ...updated[index],
-              audioUrl: uploadedAudio[slotIndex].getDirectURL(),
-            };
-            return { ...prev, songs: updated };
-          });
+        audioList = await actor.listAudio();
+        if (audioList[0]) {
+          setContent((prev) => ({
+            ...prev,
+            audioDataUrl: bytesToObjectUrl(audioList[0], "audio/*"),
+          }));
         }
+        pendingAudioRef.current = null;
       }
-      pendingSongAudioRef.current = new Map();
-    }
 
-    // ---- Images ----
-    let uploadedImages = await actor.listImages();
+      // ---- Song audio files (slots 1-6) ----
+      audioList = await actor.listAudio();
 
-    async function ensureSlotAndUpload(
-      slotIndex: number,
-      bytes: Uint8Array<ArrayBuffer>,
-    ) {
-      const blob = ExternalBlob.fromBytes(bytes);
-      if (slotIndex < uploadedImages.length) {
-        await actor!.replaceImage(BigInt(slotIndex), blob);
-      } else {
-        while (uploadedImages.length < slotIndex) {
-          await actor!.addImage(ExternalBlob.fromBytes(new Uint8Array(0)));
-          uploadedImages = await actor!.listImages();
+      async function ensureAudioSlot(slotIndex: number, bytes: Uint8Array) {
+        // Fill any missing slots before slotIndex with empty placeholders
+        while (audioList.length <= slotIndex) {
+          await actor!.addAudio(new Uint8Array(0));
+          audioList = await actor!.listAudio();
         }
-        await actor!.addImage(blob);
+        await actor!.replaceAudio(BigInt(slotIndex), bytes);
+        audioList = await actor!.listAudio();
       }
-      uploadedImages = await actor!.listImages();
-    }
 
-    // Slot 0: board game
-    if (pendingBoardGameRef.current) {
-      await ensureSlotAndUpload(0, pendingBoardGameRef.current.bytes);
-      if (uploadedImages[0])
-        setContent((prev) => ({
-          ...prev,
-          boardGameImageUrl: uploadedImages[0].getDirectURL(),
-        }));
-      pendingBoardGameRef.current = null;
-    }
-
-    // Slot 1: bench image
-    if (pendingBenchImageRef.current) {
-      await ensureSlotAndUpload(1, pendingBenchImageRef.current.bytes);
-      if (uploadedImages[1])
-        setContent((prev) => ({
-          ...prev,
-          benchImageUrl: uploadedImages[1].getDirectURL(),
-        }));
-      pendingBenchImageRef.current = null;
-    }
-
-    // Slots 3-22: polaroids 0-19
-    if (pendingPolaroidsRef.current.size > 0) {
-      for (const [index, { bytes }] of pendingPolaroidsRef.current) {
-        const slotIndex = index + 3;
-        await ensureSlotAndUpload(slotIndex, bytes);
-        if (uploadedImages[slotIndex]) {
-          setContent((prev) => {
-            const updated = [...prev.polaroids];
-            updated[index] = {
-              ...updated[index],
-              src: uploadedImages[slotIndex].getDirectURL(),
-            };
-            return { ...prev, polaroids: updated };
-          });
+      if (pendingSongAudioRef.current.size > 0) {
+        for (const [index, { bytes }] of pendingSongAudioRef.current) {
+          const slotIndex = 1 + index;
+          await ensureAudioSlot(slotIndex, bytes);
+          if (audioList[slotIndex]) {
+            const audioUrl = bytesToObjectUrl(audioList[slotIndex], "audio/*");
+            setContent((prev) => {
+              const updated = [...prev.songs];
+              updated[index] = { ...updated[index], audioUrl };
+              return { ...prev, songs: updated };
+            });
+          }
         }
+        pendingSongAudioRef.current = new Map();
       }
-      pendingPolaroidsRef.current = new Map();
-    }
 
-    // Slot 23: bouquet
-    if (pendingBouquetRef.current) {
-      await ensureSlotAndUpload(23, pendingBouquetRef.current.bytes);
-      if (uploadedImages[23])
-        setContent((prev) => ({
-          ...prev,
-          bouquetImageUrl: uploadedImages[23].getDirectURL(),
-        }));
-      pendingBouquetRef.current = null;
-    }
+      // ---- Images ----
+      let imgList = await actor.listImages();
 
-    // Slot 24: little treasures
-    if (pendingTreasuresRef.current) {
-      await ensureSlotAndUpload(24, pendingTreasuresRef.current.bytes);
-      if (uploadedImages[24])
-        setContent((prev) => ({
-          ...prev,
-          treasuresImageUrl: uploadedImages[24].getDirectURL(),
-        }));
-      pendingTreasuresRef.current = null;
-    }
-
-    // Slots 25-30: song cover images
-    if (pendingSongCoverRef.current.size > 0) {
-      for (const [index, { bytes }] of pendingSongCoverRef.current) {
-        const slotIndex = 25 + index;
-        await ensureSlotAndUpload(slotIndex, bytes);
-        if (uploadedImages[slotIndex]) {
-          setContent((prev) => {
-            const updated = [...prev.songs];
-            updated[index] = {
-              ...updated[index],
-              coverUrl: uploadedImages[slotIndex].getDirectURL(),
-            };
-            return { ...prev, songs: updated };
-          });
+      async function ensureImageSlot(slotIndex: number, bytes: Uint8Array) {
+        if (slotIndex < imgList.length) {
+          await actor!.replaceImage(BigInt(slotIndex), bytes);
+        } else {
+          while (imgList.length < slotIndex) {
+            await actor!.addImage(new Uint8Array(0));
+            imgList = await actor!.listImages();
+          }
+          await actor!.addImage(bytes);
         }
+        imgList = await actor!.listImages();
       }
-      pendingSongCoverRef.current = new Map();
+
+      // Slot 0: board game
+      if (pendingBoardGameRef.current) {
+        await ensureImageSlot(0, pendingBoardGameRef.current.bytes);
+        if (imgList[0])
+          setContent((prev) => ({
+            ...prev,
+            boardGameImageUrl: bytesToObjectUrl(imgList[0], "image/*"),
+          }));
+        pendingBoardGameRef.current = null;
+      }
+
+      // Slot 1: bench image
+      if (pendingBenchImageRef.current) {
+        await ensureImageSlot(1, pendingBenchImageRef.current.bytes);
+        if (imgList[1])
+          setContent((prev) => ({
+            ...prev,
+            benchImageUrl: bytesToObjectUrl(imgList[1], "image/*"),
+          }));
+        pendingBenchImageRef.current = null;
+      }
+
+      // Slots 3-22: polaroids 0-19
+      if (pendingPolaroidsRef.current.size > 0) {
+        for (const [index, { bytes }] of pendingPolaroidsRef.current) {
+          const slotIndex = index + 3;
+          await ensureImageSlot(slotIndex, bytes);
+          if (imgList[slotIndex]) {
+            const src = bytesToObjectUrl(imgList[slotIndex], "image/*");
+            setContent((prev) => {
+              const updated = [...prev.polaroids];
+              updated[index] = { ...updated[index], src };
+              return { ...prev, polaroids: updated };
+            });
+          }
+        }
+        pendingPolaroidsRef.current = new Map();
+      }
+
+      // Slot 23: bouquet
+      if (pendingBouquetRef.current) {
+        await ensureImageSlot(23, pendingBouquetRef.current.bytes);
+        if (imgList[23])
+          setContent((prev) => ({
+            ...prev,
+            bouquetImageUrl: bytesToObjectUrl(imgList[23], "image/*"),
+          }));
+        pendingBouquetRef.current = null;
+      }
+
+      // Slot 24: little treasures
+      if (pendingTreasuresRef.current) {
+        await ensureImageSlot(24, pendingTreasuresRef.current.bytes);
+        if (imgList[24])
+          setContent((prev) => ({
+            ...prev,
+            treasuresImageUrl: bytesToObjectUrl(imgList[24], "image/*"),
+          }));
+        pendingTreasuresRef.current = null;
+      }
+
+      // Slots 25-30: song cover images
+      if (pendingSongCoverRef.current.size > 0) {
+        for (const [index, { bytes }] of pendingSongCoverRef.current) {
+          const slotIndex = 25 + index;
+          await ensureImageSlot(slotIndex, bytes);
+          if (imgList[slotIndex]) {
+            const coverUrl = bytesToObjectUrl(imgList[slotIndex], "image/*");
+            setContent((prev) => {
+              const updated = [...prev.songs];
+              updated[index] = { ...updated[index], coverUrl };
+              return { ...prev, songs: updated };
+            });
+          }
+        }
+        pendingSongCoverRef.current = new Map();
+      }
+
+      // Slot 31: puzzle image
+      if (pendingPuzzleImageRef.current) {
+        await ensureImageSlot(31, pendingPuzzleImageRef.current.bytes);
+        if (imgList[31])
+          setContent((prev) => ({
+            ...prev,
+            puzzleImageUrl: bytesToObjectUrl(imgList[31], "image/*"),
+          }));
+        pendingPuzzleImageRef.current = null;
+      }
+
+      // Re-fetch final lists for saveContent payload
+      const [finalImgs, finalAudio] = await Promise.all([
+        actor.listImages(),
+        actor.listAudio(),
+      ]);
+
+      // Save metadata JSON — only titles, no binary data in JSON
+      const poemsJson = JSON.stringify({
+        poems: content.poems,
+        subtexts: content.subtexts,
+        songs: content.songs.map((s) => ({ title: s.title })),
+      });
+
+      await actor.saveContent({
+        letterText: poemsJson,
+        loveCards: [],
+        galleryPhotos: content.polaroids.map((p, i) => ({
+          src: p.src,
+          caption: p.caption,
+          rotation: BigInt(Math.round(p.rotation)),
+          size: BigInt(130),
+          top: BigInt(0),
+          left: BigInt(0),
+          zIndex: BigInt(i),
+        })),
+        uploadedImages: finalImgs,
+        audioFileName: content.audioFileName,
+        uploadedAudio: finalAudio,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Save failed. Please try again.";
+      setSaveError(message);
+      throw err;
     }
-
-    // Slot 31: puzzle image
-    if (pendingPuzzleImageRef.current) {
-      await ensureSlotAndUpload(31, pendingPuzzleImageRef.current.bytes);
-      if (uploadedImages[31])
-        setContent((prev) => ({
-          ...prev,
-          puzzleImageUrl: uploadedImages[31].getDirectURL(),
-        }));
-      pendingPuzzleImageRef.current = null;
-    }
-
-    // Re-fetch latest audio list after all uploads
-    uploadedAudio = await actor.listAudio();
-    uploadedImages = await actor.listImages();
-
-    // Save metadata JSON — NO audio data URLs, only titles
-    const poemsJson = JSON.stringify({
-      poems: content.poems,
-      subtexts: content.subtexts,
-      songs: content.songs.map((s) => ({
-        title: s.title,
-        // audioUrl intentionally omitted — stored in blob storage
-      })),
-    });
-
-    await actor.saveContent({
-      letterText: poemsJson,
-      loveCards: [],
-      galleryPhotos: content.polaroids.map((p, i) => ({
-        src: p.src,
-        caption: p.caption,
-        rotation: BigInt(Math.round(p.rotation)),
-        size: BigInt(130),
-        top: BigInt(0),
-        left: BigInt(0),
-        zIndex: BigInt(i),
-      })),
-      uploadedImages,
-      audioFileName: content.audioFileName,
-      uploadedAudio,
-    });
   }
 
   return {
     content,
     isLoading,
+    saveError,
     setPoems,
     setPoemAt,
     setSubtext,
