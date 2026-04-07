@@ -1,7 +1,7 @@
 import List "mo:core/List";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
 
   public type LoveCard = {
@@ -75,13 +75,15 @@ actor {
       case (?m) { m };
       case (null) { defaultMeta() };
     };
+    // Return only metadata — blobs are fetched separately via listImages/listAudio
+    // to keep this response well under the IC's ~2MB message size limit.
     {
       letterText = m.letterText;
       loveCards = m.loveCards;
       galleryPhotos = m.galleryPhotos;
       audioFileName = m.audioFileName;
-      uploadedImages = images.toArray();
-      uploadedAudio = audioFiles.toArray();
+      uploadedImages = [];
+      uploadedAudio = [];
     };
   };
 

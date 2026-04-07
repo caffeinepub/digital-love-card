@@ -339,10 +339,10 @@ export function useEditableContent() {
       // Handle card photo uploads
       let imgList = await actor.listImages();
       const pendingCardImages = pendingCardImagesRef.current;
+      // patchMap is hoisted so latestLoveCards can use it after the upload block
+      const patchMap = new Map<string, string>();
 
       if (pendingCardImages.size > 0) {
-        const patchMap = new Map<string, string>();
-
         // Upload serially to avoid concurrent list-length races
         for (const [key, { bytes }] of pendingCardImages.entries()) {
           const keyParts = key.split("-");
@@ -384,27 +384,19 @@ export function useEditableContent() {
         pendingCardImagesRef.current = new Map();
       }
 
-      // Re-fetch final lists for saveContent payload
-      const [finalImgs, finalAudio] = await Promise.all([
-        actor.listImages(),
-        actor.listAudio(),
-      ]);
-
-      // Build latest love cards with real backend URLs where we just uploaded
+      // Build latest love cards — use patchMap URLs for any photos uploaded this save
       const latestLoveCards = content.loveCards.map((card, ci) => ({
         ...card,
         photos: card.photos.map((p, pi) => {
-          const slotIndex = ci * 2 + pi;
-          if (pendingCardImages.has(`${ci}-${pi}`) && finalImgs[slotIndex]) {
-            return {
-              ...p,
-              src: bytesToObjectUrl(finalImgs[slotIndex], "image/*"),
-            };
-          }
-          return p;
+          const realUrl = patchMap.get(`${ci}-${pi}`);
+          return realUrl ? { ...p, src: realUrl } : p;
         }),
       }));
 
+      // IMPORTANT: uploadedImages and uploadedAudio are intentionally empty here.
+      // All binary files are already persisted via the individual
+      // addImage/replaceImage/addAudio/replaceAudio calls above.
+      // Including blobs here would push the message over the IC's ~2MB limit.
       await actor.saveContent({
         letterText: content.letterText,
         loveCards: latestLoveCards.map((card) => ({
@@ -424,9 +416,9 @@ export function useEditableContent() {
           left: BigInt(Math.round(p.left)),
           zIndex: BigInt(Math.round(p.zIndex)),
         })),
-        uploadedImages: finalImgs,
+        uploadedImages: [],
         audioFileName: content.audioFileName,
-        uploadedAudio: finalAudio,
+        uploadedAudio: [],
       });
     } catch (err) {
       const message =

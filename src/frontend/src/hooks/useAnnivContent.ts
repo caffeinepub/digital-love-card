@@ -556,19 +556,17 @@ export function useAnnivContent() {
         pendingPuzzleImageRef.current = null;
       }
 
-      // Re-fetch final lists for saveContent payload
-      const [finalImgs, finalAudio] = await Promise.all([
-        actor.listImages(),
-        actor.listAudio(),
-      ]);
-
-      // Save metadata JSON — only titles, no binary data in JSON
+      // Save metadata JSON — only titles/text, NO binary data
       const poemsJson = JSON.stringify({
         poems: content.poems,
         subtexts: content.subtexts,
         songs: content.songs.map((s) => ({ title: s.title })),
       });
 
+      // IMPORTANT: uploadedImages and uploadedAudio are intentionally empty here.
+      // All binary files are already persisted via the individual
+      // addImage/replaceImage/addAudio/replaceAudio calls above.
+      // Including blobs here would push the message over the IC's ~2MB limit.
       await actor.saveContent({
         letterText: poemsJson,
         loveCards: [],
@@ -581,9 +579,9 @@ export function useAnnivContent() {
           left: BigInt(0),
           zIndex: BigInt(i),
         })),
-        uploadedImages: finalImgs,
+        uploadedImages: [],
         audioFileName: content.audioFileName,
-        uploadedAudio: finalAudio,
+        uploadedAudio: [],
       });
     } catch (err) {
       const message =

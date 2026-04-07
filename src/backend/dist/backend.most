@@ -1,4 +1,4 @@
-// Version: 3.0.0
+// Version: 1.0.0
 type CardContentMeta__932677620 =
   {
     audioFileName : Text;
@@ -20,30 +20,7 @@ type LoveCard__1049532420 =
   {description : Text; photos : [{rotation : Int; src : Text}]; title : Text};
 type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
-type OldCardContent__418821525 =
-  {
-    audioFileName : Text;
-    galleryPhotos : [OldGalleryPhoto__36486616];
-    letterText : Text;
-    loveCards : [OldLoveCard__729871535];
-    uploadedAudio : [Blob];
-    uploadedImages : [Blob]
-  };
-type OldGalleryPhoto__36486616 =
-  {
-    caption : Text;
-    left : Nat;
-    rotation : Int;
-    size : Nat;
-    src : Text;
-    top : Nat;
-    zIndex : Nat
-  };
-type OldLoveCard__729871535 =
-  {description : Text; photos : [{rotation : Int; src : Text}]; title : Text};
-actor ({
-  in var content : ?OldCardContent__418821525
-}, {
+actor {
   stable audioFiles :
     {
       var blockIndex : Nat__490723111;
@@ -57,4 +34,4 @@ actor ({
       var elementIndex : Nat__490723111
     };
   stable var meta : ?CardContentMeta__932677620
-}) ;
+};
