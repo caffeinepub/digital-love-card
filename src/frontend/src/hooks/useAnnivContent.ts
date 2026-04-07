@@ -91,6 +91,10 @@ const DEFAULT_CONTENT: AnnivContent = {
  * uploadedImages[24]      = little treasures image
  * uploadedImages[25..30]  = song cover images 0-5
  * uploadedImages[31]      = puzzle image
+ *
+ * Audio slot mapping:
+ * uploadedAudio[0]        = background music
+ * uploadedAudio[1..6]     = song audio files 0-5
  */
 export function useAnnivContent() {
   const { actor, isFetching } = useActor();
@@ -121,6 +125,10 @@ export function useAnnivContent() {
     fileName: string;
   } | null>(null);
   const pendingSongCoverRef = useRef<
+    Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
+  >(new Map());
+  // Song audio stored as blobs, NOT base64 data URLs
+  const pendingSongAudioRef = useRef<
     Map<number, { bytes: Uint8Array<ArrayBuffer>; fileName: string }>
   >(new Map());
   const pendingPuzzleImageRef = useRef<{
@@ -162,7 +170,7 @@ export function useAnnivContent() {
               parsed.songs.forEach((s: Partial<SongItem>, i: number) => {
                 if (i < 6) {
                   songs[i].title = s.title || "";
-                  if (s.audioUrl) songs[i].audioUrl = s.audioUrl;
+                  // Note: audioUrl is NOT stored in JSON anymore — loaded from blob storage below
                 }
               });
             }
@@ -172,6 +180,7 @@ export function useAnnivContent() {
         }
 
         const imgs = backendContent.uploadedImages ?? [];
+        const audioSlots = backendContent.uploadedAudio ?? [];
 
         const boardGameImageUrl = imgs[0] ? imgs[0].getDirectURL() : "";
         const benchImageUrl = imgs[1] ? imgs[1].getDirectURL() : "";
@@ -198,8 +207,9 @@ export function useAnnivContent() {
 
         let audioDataUrl = "";
         const audioFileName = backendContent.audioFileName || "";
-        if (backendContent.uploadedAudio?.length) {
-          audioDataUrl = backendContent.uploadedAudio[0].getDirectURL();
+        // Background music is at audio slot 0
+        if (audioSlots.length > 0) {
+          audioDataUrl = audioSlots[0].getDirectURL();
         }
 
         // bouquet: slot 23, treasures: slot 24
@@ -210,6 +220,13 @@ export function useAnnivContent() {
         for (let i = 0; i < 6; i++) {
           if (imgs[25 + i]) {
             songs[i].coverUrl = imgs[25 + i].getDirectURL();
+          }
+        }
+
+        // song audio: audio slots 1-6
+        for (let i = 0; i < 6; i++) {
+          if (audioSlots[1 + i]) {
+            songs[i].audioUrl = audioSlots[1 + i].getDirectURL();
           }
         }
 
@@ -353,29 +370,17 @@ export function useAnnivContent() {
     });
   }
 
+  // Song audio is now stored as a blob (NOT base64), shown as object URL for preview
   function uploadSongAudio(
     index: number,
     bytes: Uint8Array<ArrayBuffer>,
     fileName: string,
-    _previewUrl: string,
+    previewUrl: string,
   ) {
-    // Convert to data URL for persistence across sessions
-    const ext = fileName.split(".").pop()?.toLowerCase() || "mp3";
-    const mime =
-      ext === "mp4" || ext === "m4a"
-        ? "audio/mp4"
-        : ext === "ogg"
-          ? "audio/ogg"
-          : "audio/mpeg";
-    const b64 = btoa(
-      Array.from(new Uint8Array(bytes))
-        .map((b) => String.fromCharCode(b))
-        .join(""),
-    );
-    const dataUrl = `data:${mime};base64,${b64}`;
+    pendingSongAudioRef.current.set(index, { bytes, fileName });
     setContent((prev) => {
       const updated = [...prev.songs];
-      updated[index] = { ...updated[index], audioUrl: dataUrl };
+      updated[index] = { ...updated[index], audioUrl: previewUrl };
       return { ...prev, songs: updated };
     });
   }
@@ -400,12 +405,11 @@ export function useAnnivContent() {
   async function saveToBackend(): Promise<void> {
     if (!actor) throw new Error("Actor not ready");
 
-    // Audio
-    let uploadedAudio: ExternalBlob[] = [];
+    // ---- Background audio (slot 0) ----
+    let uploadedAudio = await actor.listAudio();
     if (pendingAudioRef.current) {
       const blob = ExternalBlob.fromBytes(pendingAudioRef.current.bytes);
-      const existingAudio = await actor.listAudio();
-      if (existingAudio.length > 0) {
+      if (uploadedAudio.length > 0) {
         await actor.replaceAudio(0n, blob);
       } else {
         await actor.addAudio(blob);
@@ -418,10 +422,50 @@ export function useAnnivContent() {
         }));
       }
       pendingAudioRef.current = null;
-    } else {
-      uploadedAudio = await actor.listAudio();
     }
 
+    // ---- Song audio files (slots 1-6) ----
+    // Ensure slot 0 exists before writing to slots 1-6
+    uploadedAudio = await actor.listAudio();
+
+    async function ensureAudioSlotAndUpload(
+      slotIndex: number,
+      bytes: Uint8Array<ArrayBuffer>,
+    ) {
+      const blob = ExternalBlob.fromBytes(bytes);
+      // Fill any missing slots before slotIndex with empty placeholders
+      while (uploadedAudio.length <= slotIndex) {
+        if (uploadedAudio.length === 0) {
+          // slot 0 must always be background audio; add placeholder if absent
+          await actor!.addAudio(ExternalBlob.fromBytes(new Uint8Array(0)));
+        } else {
+          await actor!.addAudio(ExternalBlob.fromBytes(new Uint8Array(0)));
+        }
+        uploadedAudio = await actor!.listAudio();
+      }
+      await actor!.replaceAudio(BigInt(slotIndex), blob);
+      uploadedAudio = await actor!.listAudio();
+    }
+
+    if (pendingSongAudioRef.current.size > 0) {
+      for (const [index, { bytes }] of pendingSongAudioRef.current) {
+        const slotIndex = 1 + index; // audio slots 1-6
+        await ensureAudioSlotAndUpload(slotIndex, bytes);
+        if (uploadedAudio[slotIndex]) {
+          setContent((prev) => {
+            const updated = [...prev.songs];
+            updated[index] = {
+              ...updated[index],
+              audioUrl: uploadedAudio[slotIndex].getDirectURL(),
+            };
+            return { ...prev, songs: updated };
+          });
+        }
+      }
+      pendingSongAudioRef.current = new Map();
+    }
+
+    // ---- Images ----
     let uploadedImages = await actor.listImages();
 
     async function ensureSlotAndUpload(
@@ -534,13 +578,17 @@ export function useAnnivContent() {
       pendingPuzzleImageRef.current = null;
     }
 
-    // Songs audio URLs and titles are stored in JSON letterText
+    // Re-fetch latest audio list after all uploads
+    uploadedAudio = await actor.listAudio();
+    uploadedImages = await actor.listImages();
+
+    // Save metadata JSON — NO audio data URLs, only titles
     const poemsJson = JSON.stringify({
       poems: content.poems,
       subtexts: content.subtexts,
       songs: content.songs.map((s) => ({
         title: s.title,
-        audioUrl: s.audioUrl,
+        // audioUrl intentionally omitted — stored in blob storage
       })),
     });
 
