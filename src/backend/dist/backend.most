@@ -21,13 +21,13 @@ type LoveCard__1049532420 =
 type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 actor {
-  stable audioFiles :
+  stable var audioFiles :
     {
       var blockIndex : Nat__490723111;
       var blocks : [var [var ?Blob]];
       var elementIndex : Nat__490723111
     };
-  stable images :
+  stable var images :
     {
       var blockIndex : Nat__490723111;
       var blocks : [var [var ?Blob]];

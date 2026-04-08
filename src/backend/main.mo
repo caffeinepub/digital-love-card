@@ -42,8 +42,8 @@ actor {
   var meta : ?CardContentMeta = null;
 
   // Separate blob storage — blobs never go through saveContent
-  let images : List.List<Blob> = List.empty<Blob>();
-  let audioFiles : List.List<Blob> = List.empty<Blob>();
+  var images : List.List<Blob> = List.empty<Blob>();
+  var audioFiles : List.List<Blob> = List.empty<Blob>();
 
   func defaultMeta() : CardContentMeta {
     {
